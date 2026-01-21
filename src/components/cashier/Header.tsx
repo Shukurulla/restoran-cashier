@@ -1,0 +1,80 @@
+'use client';
+
+import { useAuth } from '@/context/AuthContext';
+import { DailySummary } from '@/types';
+import { BiCog, BiPrinter, BiUser, BiLogOut } from 'react-icons/bi';
+
+interface HeaderProps {
+  summary: DailySummary;
+  isConnected: boolean;
+  onSettingsClick: () => void;
+  onReportsClick: () => void;
+}
+
+export function Header({ summary, isConnected, onSettingsClick, onReportsClick }: HeaderProps) {
+  const { user, restaurant, logout } = useAuth();
+
+  return (
+    <header className="flex justify-between items-center py-4 mb-8 border-b border-border">
+      <div className="flex items-center gap-4">
+        <img src="/logo.png" alt="Kepket" className="w-[100px] h-auto" />
+        <h1 className="text-xl font-semibold tracking-tight">Kassir Panel</h1>
+        {restaurant && (
+          <span className="px-4 py-1.5 bg-secondary rounded-full text-sm text-muted-foreground font-medium">
+            {restaurant.name}
+          </span>
+        )}
+      </div>
+
+      <div className="flex gap-8">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-2xl font-semibold tabular-nums">{summary.totalOrders}</span>
+          <span className="text-xs text-[#71717a] uppercase tracking-wider">JAMI BUYURTMALAR</span>
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-2xl font-semibold tabular-nums text-[#eab308]">{summary.activeOrders}</span>
+          <span className="text-xs text-[#71717a] uppercase tracking-wider">TO&apos;LANMAGAN</span>
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-2xl font-semibold tabular-nums text-[#22c55e]">{summary.paidOrders}</span>
+          <span className="text-xs text-[#71717a] uppercase tracking-wider">TO&apos;LANGAN</span>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <div className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium bg-secondary border border-border ${isConnected ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
+          <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-[#22c55e] shadow-[0_0_8px_#22c55e]' : 'bg-[#ef4444]'}`} />
+          <span>{isConnected ? 'Ulangan' : 'Ulanmagan'}</span>
+        </div>
+
+        <button
+          onClick={onSettingsClick}
+          className="flex items-center gap-2 px-4 py-2 bg-secondary border border-border rounded-lg text-muted-foreground text-sm font-medium hover:bg-[#262626] hover:text-foreground transition-colors"
+        >
+          <BiCog className="text-lg" />
+        </button>
+
+        <button
+          onClick={onReportsClick}
+          className="flex items-center gap-2 px-4 py-2 bg-secondary border border-border rounded-lg text-muted-foreground text-sm font-medium hover:bg-[#262626] hover:text-foreground transition-colors"
+        >
+          <BiPrinter className="text-lg" />
+          Hisobotlar
+        </button>
+
+        <div className="flex items-center gap-2 px-4 py-2 bg-secondary rounded-lg text-muted-foreground text-sm font-medium">
+          <BiUser className="text-lg" />
+          <span>{user?.name}</span>
+        </div>
+
+        <button
+          onClick={logout}
+          className="flex items-center gap-2 px-4 py-2 bg-[#ef4444]/10 border border-[#ef4444]/30 rounded-lg text-[#ef4444] text-sm font-medium hover:bg-[#ef4444]/20 hover:border-[#ef4444] transition-colors"
+        >
+          <BiLogOut className="text-lg" />
+          Chiqish
+        </button>
+      </div>
+    </header>
+  );
+}

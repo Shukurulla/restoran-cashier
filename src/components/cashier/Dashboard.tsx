@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { io, Socket } from 'socket.io-client';
-import { useAuth } from '@/context/AuthContext';
-import { api } from '@/services/api';
-import { PrinterAPI } from '@/services/printer';
-import { Order, DailySummary } from '@/types';
-import { Header } from './Header';
-import { SummaryCards } from './SummaryCards';
-import { OrdersSection } from './OrdersSection';
-import { PaymentModal } from './PaymentModal';
-import { SettingsModal } from './SettingsModal';
-import { ReportsModal } from './ReportsModal';
-import { OrderDetailsModal } from './OrderDetailsModal';
+import { useState, useEffect, useCallback } from "react";
+import { io, Socket } from "socket.io-client";
+import { useAuth } from "@/context/AuthContext";
+import { api } from "@/services/api";
+import { PrinterAPI } from "@/services/printer";
+import { Order, DailySummary } from "@/types";
+import { Header } from "./Header";
+import { SummaryCards } from "./SummaryCards";
+import { OrdersSection } from "./OrdersSection";
+import { PaymentModal } from "./PaymentModal";
+import { SettingsModal } from "./SettingsModal";
+import { ReportsModal } from "./ReportsModal";
+import { OrderDetailsModal } from "./OrderDetailsModal";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kepket.kerek.uz';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://server.kepket.uz";
 
 export function Dashboard() {
   const { user, restaurant } = useAuth();
@@ -40,9 +40,9 @@ export function Dashboard() {
 
   // Audio for notifications
   const [audio] = useState(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const a = new Audio();
-      a.src = '/notification.mp3';
+      a.src = "/notification.mp3";
       return a;
     }
     return null;
@@ -57,7 +57,7 @@ export function Dashboard() {
       setOrders(ordersData);
       setSummary(summaryData);
     } catch (error) {
-      console.error('Failed to load data:', error);
+      console.error("Failed to load data:", error);
     }
   }, []);
 
@@ -68,21 +68,21 @@ export function Dashboard() {
 
     const newSocket = io(API_URL, {
       auth: { token },
-      transports: ['websocket', 'polling'],
+      transports: ["websocket", "polling"],
     });
 
-    newSocket.on('connect', () => {
+    newSocket.on("connect", () => {
       setIsConnected(true);
-      newSocket.emit('join-restaurant', user.restaurantId);
+      newSocket.emit("join-restaurant", user.restaurantId);
     });
 
-    newSocket.on('disconnect', () => {
+    newSocket.on("disconnect", () => {
       setIsConnected(false);
     });
 
-    newSocket.on('new-order', (order: Order) => {
-      setOrders(prev => [order, ...prev]);
-      setSummary(prev => ({
+    newSocket.on("new-order", (order: Order) => {
+      setOrders((prev) => [order, ...prev]);
+      setSummary((prev) => ({
         ...prev,
         totalOrders: prev.totalOrders + 1,
         activeOrders: prev.activeOrders + 1,
@@ -90,12 +90,16 @@ export function Dashboard() {
       audio?.play().catch(() => {});
     });
 
-    newSocket.on('order-updated', (updatedOrder: Order) => {
-      setOrders(prev => prev.map(o => o._id === updatedOrder._id ? updatedOrder : o));
+    newSocket.on("order-updated", (updatedOrder: Order) => {
+      setOrders((prev) =>
+        prev.map((o) => (o._id === updatedOrder._id ? updatedOrder : o)),
+      );
     });
 
-    newSocket.on('order-paid', (paidOrder: Order) => {
-      setOrders(prev => prev.map(o => o._id === paidOrder._id ? paidOrder : o));
+    newSocket.on("order-paid", (paidOrder: Order) => {
+      setOrders((prev) =>
+        prev.map((o) => (o._id === paidOrder._id ? paidOrder : o)),
+      );
       loadData(); // Refresh summary
     });
 
@@ -111,36 +115,43 @@ export function Dashboard() {
     loadData();
   }, [loadData]);
 
-  const handlePayment = async (orderId: string, paymentType: 'cash' | 'card') => {
-    const order = orders.find(o => o._id === orderId);
+  const handlePayment = async (
+    orderId: string,
+    paymentType: "cash" | "card",
+  ) => {
+    const order = orders.find((o) => o._id === orderId);
     if (!order) return;
 
     const paidOrder = await api.processPayment(orderId, paymentType);
 
     // Print receipt
-    const selectedPrinter = localStorage.getItem('selectedPrinter') || undefined;
-    await PrinterAPI.printPayment({
-      orderId: paidOrder._id,
-      orderNumber: paidOrder.orderNumber,
-      tableName: paidOrder.tableName,
-      waiterName: paidOrder.waiter.name,
-      items: paidOrder.items
-        .filter(item => item.status !== 'cancelled')
-        .map(item => ({
-          name: item.name,
-          quantity: item.quantity,
-          price: item.price,
-        })),
-      subtotal: paidOrder.total,
-      serviceFee: paidOrder.serviceFee,
-      total: paidOrder.grandTotal,
-      paymentType,
-      restaurantName: restaurant?.name || 'Restoran',
-      date: new Date().toLocaleString('uz-UZ'),
-    }, selectedPrinter);
+    const selectedPrinter =
+      localStorage.getItem("selectedPrinter") || undefined;
+    await PrinterAPI.printPayment(
+      {
+        orderId: paidOrder._id,
+        orderNumber: paidOrder.orderNumber,
+        tableName: paidOrder.tableName,
+        waiterName: paidOrder.waiter.name,
+        items: paidOrder.items
+          .filter((item) => item.status !== "cancelled")
+          .map((item) => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+        subtotal: paidOrder.total,
+        serviceFee: paidOrder.serviceFee,
+        total: paidOrder.grandTotal,
+        paymentType,
+        restaurantName: restaurant?.name || "Restoran",
+        date: new Date().toLocaleString("uz-UZ"),
+      },
+      selectedPrinter,
+    );
 
     // Update local state
-    setOrders(prev => prev.map(o => o._id === orderId ? paidOrder : o));
+    setOrders((prev) => prev.map((o) => (o._id === orderId ? paidOrder : o)));
     loadData();
   };
 

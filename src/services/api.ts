@@ -1,7 +1,7 @@
 import { User, Restaurant, Order, DailySummary } from "@/types";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://kepket.kerek.uz";
+  process.env.NEXT_PUBLIC_API_URL || "https://server.kepket.uz";
 
 class ApiService {
   private token: string | null = null;

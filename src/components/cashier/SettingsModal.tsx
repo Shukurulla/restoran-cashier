@@ -1,19 +1,25 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { PrinterInfo } from '@/types';
-import { PrinterAPI } from '@/services/printer';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useState, useEffect } from "react";
+import { PrinterInfo } from "@/types";
+import { PrinterAPI } from "@/services/printer";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { BiCog, BiPrinter, BiServer, BiRefresh } from 'react-icons/bi';
+} from "@/components/ui/select";
+import { BiCog, BiPrinter, BiServer, BiRefresh } from "react-icons/bi";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -22,16 +28,16 @@ interface SettingsModalProps {
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [printers, setPrinters] = useState<PrinterInfo[]>([]);
-  const [selectedPrinter, setSelectedPrinter] = useState<string>('');
-  const [serverUrl, setServerUrl] = useState('https://kepket.kerek.uz');
+  const [selectedPrinter, setSelectedPrinter] = useState<string>("");
+  const [serverUrl, setServerUrl] = useState("https://server.kepket.uz");
   const [isLoadingPrinters, setIsLoadingPrinters] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       loadPrinters();
-      const savedPrinter = localStorage.getItem('selectedPrinter');
-      const savedUrl = localStorage.getItem('serverUrl');
+      const savedPrinter = localStorage.getItem("selectedPrinter");
+      const savedUrl = localStorage.getItem("serverUrl");
       if (savedPrinter) setSelectedPrinter(savedPrinter);
       if (savedUrl) setServerUrl(savedUrl);
     }
@@ -43,13 +49,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       const printerList = await PrinterAPI.getPrinters();
       setPrinters(printerList);
       if (printerList.length > 0 && !selectedPrinter) {
-        const defaultPrinter = printerList.find(p => p.isDefault);
+        const defaultPrinter = printerList.find((p) => p.isDefault);
         if (defaultPrinter) {
           setSelectedPrinter(defaultPrinter.name);
         }
       }
     } catch (error) {
-      console.error('Failed to load printers:', error);
+      console.error("Failed to load printers:", error);
     } finally {
       setIsLoadingPrinters(false);
     }
@@ -60,18 +66,18 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     try {
       const result = await PrinterAPI.printTest(selectedPrinter || undefined);
       if (!result.success) {
-        alert('Test chop etish xatoligi: ' + result.error);
+        alert("Test chop etish xatoligi: " + result.error);
       }
     } catch (error) {
-      alert('Printer server bilan bog\'lanib bo\'lmadi');
+      alert("Printer server bilan bog'lanib bo'lmadi");
     } finally {
       setIsPrinting(false);
     }
   };
 
   const handleSave = () => {
-    localStorage.setItem('selectedPrinter', selectedPrinter);
-    localStorage.setItem('serverUrl', serverUrl);
+    localStorage.setItem("selectedPrinter", selectedPrinter);
+    localStorage.setItem("serverUrl", serverUrl);
     onClose();
   };
 
@@ -94,15 +100,20 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </h3>
 
             <div className="space-y-2">
-              <label className="text-sm text-muted-foreground">Printer tanlang</label>
-              <Select value={selectedPrinter} onValueChange={setSelectedPrinter}>
+              <label className="text-sm text-muted-foreground">
+                Printer tanlang
+              </label>
+              <Select
+                value={selectedPrinter}
+                onValueChange={setSelectedPrinter}
+              >
                 <SelectTrigger className="bg-secondary border-border">
                   <SelectValue placeholder="-- Printer tanlang --" />
                 </SelectTrigger>
                 <SelectContent className="bg-card border-border">
                   {printers.map((printer) => (
                     <SelectItem key={printer.name} value={printer.name}>
-                      {printer.displayName} {printer.isDefault && '(Default)'}
+                      {printer.displayName} {printer.isDefault && "(Default)"}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -116,7 +127,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 disabled={isLoadingPrinters}
                 className="flex-1"
               >
-                <BiRefresh className={`mr-2 ${isLoadingPrinters ? 'animate-spin' : ''}`} />
+                <BiRefresh
+                  className={`mr-2 ${isLoadingPrinters ? "animate-spin" : ""}`}
+                />
                 Yangilash
               </Button>
               <Button
@@ -125,7 +138,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 className="flex-1 bg-primary text-primary-foreground"
               >
                 <BiPrinter className="mr-2" />
-                {isPrinting ? 'Chop etilmoqda...' : 'Test chop etish'}
+                {isPrinting ? "Chop etilmoqda..." : "Test chop etish"}
               </Button>
             </div>
           </div>
@@ -138,7 +151,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </h3>
 
             <div className="space-y-2">
-              <label className="text-sm text-muted-foreground">Server URL</label>
+              <label className="text-sm text-muted-foreground">
+                Server URL
+              </label>
               <Input
                 value={serverUrl}
                 onChange={(e) => setServerUrl(e.target.value)}
@@ -152,7 +167,10 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           <Button variant="outline" onClick={onClose} className="flex-1">
             Bekor qilish
           </Button>
-          <Button onClick={handleSave} className="flex-1 bg-[#22c55e] hover:bg-[#22c55e]/90 text-white">
+          <Button
+            onClick={handleSave}
+            className="flex-1 bg-[#22c55e] hover:bg-[#22c55e]/90 text-white"
+          >
             Saqlash
           </Button>
         </DialogFooter>

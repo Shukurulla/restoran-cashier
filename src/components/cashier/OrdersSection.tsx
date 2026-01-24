@@ -9,9 +9,10 @@ interface OrdersSectionProps {
   orders: Order[];
   onPayClick: (order: Order) => void;
   onDetailsClick: (order: Order) => void;
+  onPrintClick?: (order: Order) => void;
 }
 
-export function OrdersSection({ orders, onPayClick, onDetailsClick }: OrdersSectionProps) {
+export function OrdersSection({ orders, onPayClick, onDetailsClick, onPrintClick }: OrdersSectionProps) {
   const [filter, setFilter] = useState<FilterType>('active');
 
   const activeOrders = orders.filter(o => o.paymentStatus !== 'paid');
@@ -82,6 +83,7 @@ export function OrdersSection({ orders, onPayClick, onDetailsClick }: OrdersSect
                 order={order}
                 onPayClick={onPayClick}
                 onDetailsClick={onDetailsClick}
+                onPrintClick={onPrintClick}
               />
             ))}
           </div>

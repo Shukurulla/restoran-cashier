@@ -1,12 +1,13 @@
 'use client';
 
 import { Order } from '@/types';
-import { BiTable, BiUser, BiCheck } from 'react-icons/bi';
+import { BiTable, BiUser, BiCheck, BiPrinter } from 'react-icons/bi';
 
 interface OrderCardProps {
   order: Order;
   onPayClick: (order: Order) => void;
   onDetailsClick: (order: Order) => void;
+  onPrintClick?: (order: Order) => void;
 }
 
 const formatMoney = (amount: number) => {
@@ -24,7 +25,7 @@ const getStatusBadge = (order: Order) => {
   return { text: 'TAYYORLANMOQDA', className: 'bg-[#3b82f6]/15 text-[#3b82f6]' };
 };
 
-export function OrderCard({ order, onPayClick, onDetailsClick }: OrderCardProps) {
+export function OrderCard({ order, onPayClick, onDetailsClick, onPrintClick }: OrderCardProps) {
   const status = getStatusBadge(order);
   const activeItems = order.items.filter(item => item.status !== 'cancelled');
   const displayItems = activeItems.slice(0, 3);
@@ -101,8 +102,20 @@ export function OrderCard({ order, onPayClick, onDetailsClick }: OrderCardProps)
       </div>
 
       {/* Actions */}
-      {order.paymentStatus !== 'paid' && (
-        <div className="px-5 py-3 bg-secondary flex gap-2">
+      <div className="px-5 py-3 bg-secondary flex gap-2">
+        {onPrintClick && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onPrintClick(order);
+            }}
+            className="py-2.5 px-4 bg-[#262626] border border-border rounded-lg text-muted-foreground text-sm font-semibold hover:bg-[#303030] hover:text-foreground transition-colors flex items-center gap-2"
+          >
+            <BiPrinter className="text-lg" />
+            Chek
+          </button>
+        )}
+        {order.paymentStatus !== 'paid' && (
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -112,8 +125,8 @@ export function OrderCard({ order, onPayClick, onDetailsClick }: OrderCardProps)
           >
             To&apos;lov qabul qilish
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

@@ -165,6 +165,34 @@ export function Dashboard() {
     setIsDetailsOpen(true);
   };
 
+  const handlePrintClick = async (order: Order) => {
+    const selectedPrinter = localStorage.getItem("selectedPrinter") || undefined;
+    const paymentType = order.paymentType || "cash";
+
+    await PrinterAPI.printPayment(
+      {
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+        tableName: order.tableName,
+        waiterName: order.waiter.name,
+        items: order.items
+          .filter((item) => item.status !== "cancelled")
+          .map((item) => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+        subtotal: order.total,
+        serviceFee: order.serviceFee,
+        total: order.grandTotal,
+        paymentType,
+        restaurantName: restaurant?.name || "Restoran",
+        date: new Date().toLocaleString("uz-UZ"),
+      },
+      selectedPrinter,
+    );
+  };
+
   return (
     <div className="min-h-screen p-6 max-w-[1600px] mx-auto">
       <Header
@@ -180,6 +208,7 @@ export function Dashboard() {
         orders={orders}
         onPayClick={handlePayClick}
         onDetailsClick={handleDetailsClick}
+        onPrintClick={handlePrintClick}
       />
 
       {/* Modals */}

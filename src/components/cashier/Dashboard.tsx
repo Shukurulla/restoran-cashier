@@ -73,34 +73,43 @@ export function Dashboard() {
 
     newSocket.on("connect", () => {
       setIsConnected(true);
+      // Cashier room ga qo'shilish
       newSocket.emit("join-restaurant", user.restaurantId);
+      newSocket.emit("join_cashier", { restaurantId: user.restaurantId });
     });
 
     newSocket.on("disconnect", () => {
       setIsConnected(false);
     });
 
-    newSocket.on("new-order", (order: Order) => {
-      setOrders((prev) => [order, ...prev]);
-      setSummary((prev) => ({
-        ...prev,
-        totalOrders: prev.totalOrders + 1,
-        activeOrders: prev.activeOrders + 1,
-      }));
+    // Yangi order kelganda (server: new_order_for_cashier)
+    newSocket.on("new_order_for_cashier", () => {
+      loadData(); // Ma'lumotlarni yangilash
       audio?.play().catch(() => {});
     });
 
-    newSocket.on("order-updated", (updatedOrder: Order) => {
-      setOrders((prev) =>
-        prev.map((o) => (o._id === updatedOrder._id ? updatedOrder : o)),
-      );
+    // Kitchen order kelganda
+    newSocket.on("new_kitchen_order", () => {
+      loadData();
+      audio?.play().catch(() => {});
     });
 
-    newSocket.on("order-paid", (paidOrder: Order) => {
-      setOrders((prev) =>
-        prev.map((o) => (o._id === paidOrder._id ? paidOrder : o)),
-      );
-      loadData(); // Refresh summary
+    // Order yangilanganda
+    newSocket.on("order_updated", () => {
+      loadData();
+    });
+
+    newSocket.on("kitchen_orders_updated", () => {
+      loadData();
+    });
+
+    // To'lov qilinganda
+    newSocket.on("order_paid", () => {
+      loadData();
+    });
+
+    newSocket.on("order_paid_success", () => {
+      loadData();
     });
 
     setSocket(newSocket);

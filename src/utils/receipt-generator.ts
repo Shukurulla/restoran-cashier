@@ -30,9 +30,15 @@ interface PaymentData {
 
 interface ReportData {
   restaurantName: string;
-  totalCash: number;
-  totalCard: number;
+  date?: string;
+  totalOrders?: number;
+  totalRevenue?: number;
+  cashRevenue?: number;
+  cardRevenue?: number;
+  totalCash?: number;
+  totalCard?: number;
   totalUnpaid?: number;
+  waiterStats?: Array<{ name: string; orders: number; revenue: number }>;
 }
 
 interface WaiterData {
@@ -210,19 +216,24 @@ ${isPaid ? '<div class="center">Xaridingiz uchun rahmat!</div>' : '<div class="p
  * Kunlik hisobot cheki HTML generatsiya qilish
  */
 export function generateReportReceiptHTML(data: ReportData): string {
-  const total = data.totalCash + data.totalCard;
+  // Ikki xil nomlanishni qo'llab-quvvatlash
+  const cashAmount = data.cashRevenue ?? data.totalCash ?? 0;
+  const cardAmount = data.cardRevenue ?? data.totalCard ?? 0;
+  const total = data.totalRevenue ?? (cashAmount + cardAmount);
+  const dateStr = data.date || formatDateTime();
 
   const content = `
 <div class="center header">HISOBOT</div>
 <div class="center subheader">UMUMIY TUSHUM</div>
 <div class="sep">${SEP}</div>
 <div class="row"><span class="left">Joyi:</span><span class="right">${data.restaurantName || 'Restoran'}</span></div>
-<div class="row"><span class="left">Sana:</span><span class="right">${formatDateTime()}</span></div>
+<div class="row"><span class="left">Sana:</span><span class="right">${dateStr}</span></div>
+${data.totalOrders !== undefined ? `<div class="row"><span class="left">Buyurtmalar:</span><span class="right">${data.totalOrders} ta</span></div>` : ''}
 <div class="sep">${SEP_DOUBLE}</div>
 <div class="row bold"><span class="left">To'lov turi</span><span class="right">Summa</span></div>
 <div class="sep">${SEP}</div>
-<div class="row"><span class="left">Naqd pul:</span><span class="right">${formatPrice(data.totalCash)} so'm</span></div>
-<div class="row"><span class="left">Plastik karta:</span><span class="right">${formatPrice(data.totalCard)} so'm</span></div>
+<div class="row"><span class="left">Naqd pul:</span><span class="right">${formatPrice(cashAmount)} so'm</span></div>
+<div class="row"><span class="left">Plastik karta:</span><span class="right">${formatPrice(cardAmount)} so'm</span></div>
 ${data.totalUnpaid !== undefined ? `<div class="row"><span class="left">To'lanmagan:</span><span class="right">${formatPrice(data.totalUnpaid)} so'm</span></div>` : ''}
 <div class="sep">${SEP_DOUBLE}</div>
 <div class="row large"><span class="left">JAMI TUSHUM:</span><span class="right">${formatPrice(total)} so'm</span></div>

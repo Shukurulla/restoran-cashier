@@ -96,7 +96,7 @@ class ApiService {
       const subtotal = items.reduce((sum: number, item: { price: number; quantity: number }) =>
         sum + item.price * item.quantity, 0);
       const serviceFee = order.ofitsianService || Math.round(subtotal * 0.1);
-      const grandTotal = order.totalPrice || (subtotal + serviceFee);
+      const grandTotal = subtotal + serviceFee;
 
       return {
         _id: order._id,
@@ -159,7 +159,7 @@ class ApiService {
     const subtotal = items.reduce((sum: number, item: { price: number; quantity: number }) =>
       sum + item.price * item.quantity, 0);
     const serviceFee = order.ofitsianService || Math.round(subtotal * 0.1);
-    const grandTotal = order.totalPrice || (subtotal + serviceFee);
+    const grandTotal = subtotal + serviceFee;
 
     return {
       _id: order._id,

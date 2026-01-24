@@ -2,6 +2,7 @@
 
 import { DailySummary } from '@/types';
 import { BiDollar, BiPackage, BiMoney, BiCreditCard } from 'react-icons/bi';
+import { SiKlarna } from 'react-icons/si';
 
 interface SummaryCardsProps {
   summary: DailySummary;
@@ -37,14 +38,21 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
     {
       icon: BiCreditCard,
       value: formatMoney(summary.cardRevenue),
-      label: 'Karta orqali',
+      label: 'Plastik karta',
+      iconBg: 'bg-[#3b82f6]/10',
+      iconColor: 'text-[#3b82f6]',
+    },
+    {
+      icon: SiKlarna,
+      value: formatMoney(summary.clickRevenue),
+      label: 'Click',
       iconBg: 'bg-[#a855f7]/10',
       iconColor: 'text-[#a855f7]',
     },
   ];
 
   return (
-    <div className="grid grid-cols-4 gap-4 mb-8">
+    <div className="grid grid-cols-5 gap-4 mb-8">
       {cards.map((card, index) => (
         <div
           key={index}

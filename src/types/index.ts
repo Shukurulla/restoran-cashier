@@ -22,6 +22,14 @@ export interface OrderItem {
   cancelReason?: string;
 }
 
+export type PaymentType = 'cash' | 'card' | 'click';
+
+export interface PaymentSplit {
+  cash: number;
+  card: number;
+  click: number;
+}
+
 export interface Order {
   _id: string;
   orderNumber: number;
@@ -30,7 +38,9 @@ export interface Order {
   items: OrderItem[];
   status: 'active' | 'paid' | 'cancelled';
   paymentStatus: 'pending' | 'paid';
-  paymentType?: 'cash' | 'card';
+  paymentType?: PaymentType;
+  paymentSplit?: PaymentSplit;
+  comment?: string;
   total: number;
   serviceFee: number;
   grandTotal: number;
@@ -47,6 +57,7 @@ export interface DailySummary {
   totalOrders: number;
   cashRevenue: number;
   cardRevenue: number;
+  clickRevenue: number;
   activeOrders: number;
   paidOrders: number;
 }
@@ -70,7 +81,9 @@ export interface PaymentData {
   subtotal: number;
   serviceFee: number;
   total: number;
-  paymentType: 'cash' | 'card';
+  paymentType: PaymentType;
+  paymentSplit?: PaymentSplit;
+  comment?: string;
   restaurantName: string;
   date: string;
 }

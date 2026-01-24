@@ -5,7 +5,7 @@ import { io, Socket } from "socket.io-client";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/services/api";
 import { PrinterAPI } from "@/services/printer";
-import { Order, DailySummary } from "@/types";
+import { Order, DailySummary, PaymentType, PaymentSplit } from "@/types";
 import { Header } from "./Header";
 import { SummaryCards } from "./SummaryCards";
 import { OrdersSection } from "./OrdersSection";
@@ -24,6 +24,7 @@ export function Dashboard() {
     totalOrders: 0,
     cashRevenue: 0,
     cardRevenue: 0,
+    clickRevenue: 0,
     activeOrders: 0,
     paidOrders: 0,
   });
@@ -112,6 +113,21 @@ export function Dashboard() {
       loadData();
     });
 
+    // Item status o'zgarganda (kitchen tomonidan)
+    newSocket.on("item_status_updated", () => {
+      loadData();
+    });
+
+    // Order item status o'zgarganda
+    newSocket.on("food_status_changed", () => {
+      loadData();
+    });
+
+    // Barcha itemlar yetkazilganda order tugatildi
+    newSocket.on("order_completed", () => {
+      loadData();
+    });
+
     setSocket(newSocket);
 
     return () => {
@@ -126,42 +142,58 @@ export function Dashboard() {
 
   const handlePayment = async (
     orderId: string,
-    paymentType: "cash" | "card",
+    paymentType: PaymentType,
+    paymentSplit?: PaymentSplit,
+    comment?: string,
   ) => {
     const order = orders.find((o) => o._id === orderId);
     if (!order) return;
 
-    const paidOrder = await api.processPayment(orderId, paymentType);
+    try {
+      const paidOrder = await api.processPayment(orderId, paymentType, paymentSplit, comment);
 
-    // Print receipt
-    const selectedPrinter =
-      localStorage.getItem("selectedPrinter") || undefined;
-    await PrinterAPI.printPayment(
-      {
-        orderId: paidOrder._id,
-        orderNumber: paidOrder.orderNumber,
-        tableName: paidOrder.tableName,
-        waiterName: paidOrder.waiter.name,
-        items: paidOrder.items
-          .filter((item) => item.status !== "cancelled")
-          .map((item) => ({
-            name: item.name,
-            quantity: item.quantity,
-            price: item.price,
-          })),
-        subtotal: paidOrder.total,
-        serviceFee: paidOrder.serviceFee,
-        total: paidOrder.grandTotal,
-        paymentType,
-        restaurantName: restaurant?.name || "Restoran",
-        date: new Date().toLocaleString("uz-UZ"),
-      },
-      selectedPrinter,
-    );
+      // Print receipt
+      const selectedPrinter =
+        localStorage.getItem("selectedPrinter") || undefined;
 
-    // Update local state
-    setOrders((prev) => prev.map((o) => (o._id === orderId ? paidOrder : o)));
-    loadData();
+      if (selectedPrinter) {
+        const printResult = await PrinterAPI.printPayment(
+          {
+            orderId: paidOrder._id,
+            orderNumber: paidOrder.orderNumber,
+            tableName: paidOrder.tableName,
+            waiterName: paidOrder.waiter.name,
+            items: paidOrder.items
+              .filter((item) => item.status !== "cancelled")
+              .map((item) => ({
+                name: item.name,
+                quantity: item.quantity,
+                price: item.price,
+              })),
+            subtotal: paidOrder.total,
+            serviceFee: paidOrder.serviceFee,
+            total: paidOrder.grandTotal,
+            paymentType,
+            paymentSplit,
+            comment,
+            restaurantName: restaurant?.name || "Restoran",
+            date: new Date().toLocaleString("uz-UZ"),
+          },
+          selectedPrinter,
+        );
+
+        if (!printResult.success) {
+          console.error("Chek chiqarishda xatolik:", printResult.error);
+        }
+      }
+
+      // Update local state
+      setOrders((prev) => prev.map((o) => (o._id === orderId ? paidOrder : o)));
+      loadData();
+    } catch (error) {
+      console.error("To'lov xatosi:", error);
+      alert("To'lov amalga oshirilmadi");
+    }
   };
 
   const handlePayClick = (order: Order) => {
@@ -175,31 +207,51 @@ export function Dashboard() {
   };
 
   const handlePrintClick = async (order: Order) => {
+    console.log("Chek chiqarish boshlandi:", order._id);
+
     const selectedPrinter = localStorage.getItem("selectedPrinter") || undefined;
+    console.log("Tanlangan printer:", selectedPrinter);
+
+    if (!selectedPrinter) {
+      alert("Printer tanlanmagan. Sozlamalardan printer tanlang.");
+      return;
+    }
+
     const paymentType = order.paymentType || "cash";
 
-    await PrinterAPI.printPayment(
-      {
-        orderId: order._id,
-        orderNumber: order.orderNumber,
-        tableName: order.tableName,
-        waiterName: order.waiter.name,
-        items: order.items
-          .filter((item) => item.status !== "cancelled")
-          .map((item) => ({
-            name: item.name,
-            quantity: item.quantity,
-            price: item.price,
-          })),
-        subtotal: order.total,
-        serviceFee: order.serviceFee,
-        total: order.grandTotal,
-        paymentType,
-        restaurantName: restaurant?.name || "Restoran",
-        date: new Date().toLocaleString("uz-UZ"),
-      },
-      selectedPrinter,
-    );
+    try {
+      const result = await PrinterAPI.printPayment(
+        {
+          orderId: order._id,
+          orderNumber: order.orderNumber,
+          tableName: order.tableName,
+          waiterName: order.waiter.name,
+          items: order.items
+            .filter((item) => item.status !== "cancelled")
+            .map((item) => ({
+              name: item.name,
+              quantity: item.quantity,
+              price: item.price,
+            })),
+          subtotal: order.total,
+          serviceFee: order.serviceFee,
+          total: order.grandTotal,
+          paymentType,
+          restaurantName: restaurant?.name || "Restoran",
+          date: new Date().toLocaleString("uz-UZ"),
+        },
+        selectedPrinter,
+      );
+
+      console.log("Chek chiqarish natijasi:", result);
+
+      if (!result.success) {
+        alert("Chek chiqarishda xatolik: " + (result.error || "Noma'lum xatolik"));
+      }
+    } catch (error) {
+      console.error("Chek chiqarishda xatolik:", error);
+      alert("Chek chiqarishda xatolik yuz berdi");
+    }
   };
 
   return (

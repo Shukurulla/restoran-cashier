@@ -1,4 +1,4 @@
-import { User, Restaurant, Order, DailySummary } from "@/types";
+import { User, Restaurant, Order, DailySummary, PaymentType, PaymentSplit } from "@/types";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "https://server.kepket.uz";
@@ -129,6 +129,7 @@ class ApiService {
       totalOrders: data.totalOrders || 0,
       cashRevenue: data.cashRevenue || 0,
       cardRevenue: data.cardRevenue || 0,
+      clickRevenue: data.clickRevenue || 0,
       activeOrders: data.totalOrders - (data.paidOrders || 0),
       paidOrders: data.paidOrders || 0,
     };
@@ -136,14 +137,20 @@ class ApiService {
 
   async processPayment(
     orderId: string,
-    paymentType: "cash" | "card",
+    paymentType: PaymentType,
+    paymentSplit?: PaymentSplit,
+    comment?: string,
   ): Promise<Order> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = await this.request<{ order: any }>(
       `/api/orders/${orderId}/pay`,
       {
         method: "POST",
-        body: JSON.stringify({ paymentType }),
+        body: JSON.stringify({
+          paymentType,
+          paymentSplit,
+          comment,
+        }),
       },
     );
 

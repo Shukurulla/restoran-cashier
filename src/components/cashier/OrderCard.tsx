@@ -1,7 +1,8 @@
 'use client';
 
-import { Order } from '@/types';
-import { BiTable, BiUser, BiCheck, BiPrinter } from 'react-icons/bi';
+import { Order, OrderItem } from '@/types';
+import { BiTable, BiUser, BiCheck, BiPrinter, BiTime, BiLoader } from 'react-icons/bi';
+import { MdDeliveryDining } from 'react-icons/md';
 
 interface OrderCardProps {
   order: Order;
@@ -14,15 +15,68 @@ const formatMoney = (amount: number) => {
   return amount.toLocaleString('uz-UZ') + ' so\'m';
 };
 
+// Item status uchun badge
+const getItemStatusBadge = (status: OrderItem['status']) => {
+  switch (status) {
+    case 'pending':
+      return {
+        icon: BiTime,
+        text: 'Kutilmoqda',
+        className: 'text-[#71717a]',
+        bgClass: 'bg-[#71717a]/10',
+      };
+    case 'preparing':
+      return {
+        icon: BiLoader,
+        text: 'Tayyorlanmoqda',
+        className: 'text-[#eab308]',
+        bgClass: 'bg-[#eab308]/10',
+      };
+    case 'ready':
+      return {
+        icon: BiCheck,
+        text: 'Tayyor',
+        className: 'text-[#22c55e]',
+        bgClass: 'bg-[#22c55e]/10',
+      };
+    case 'served':
+      return {
+        icon: MdDeliveryDining,
+        text: 'Yetkazildi',
+        className: 'text-[#3b82f6]',
+        bgClass: 'bg-[#3b82f6]/10',
+      };
+    default:
+      return {
+        icon: BiTime,
+        text: status,
+        className: 'text-[#71717a]',
+        bgClass: 'bg-[#71717a]/10',
+      };
+  }
+};
+
+// Order status uchun badge
 const getStatusBadge = (order: Order) => {
   if (order.paymentStatus === 'paid') {
     return { text: 'TO\'LANGAN', className: 'bg-[#22c55e]/20 text-[#22c55e]' };
   }
-  const allReady = order.items.every(item => item.status === 'ready' || item.status === 'served');
+
+  const activeItems = order.items.filter(item => item.status !== 'cancelled');
+  const allServed = activeItems.every(item => item.status === 'served');
+  const allReady = activeItems.every(item => item.status === 'ready' || item.status === 'served');
+  const anyPreparing = activeItems.some(item => item.status === 'preparing');
+
+  if (allServed) {
+    return { text: 'YETKAZILDI', className: 'bg-[#3b82f6]/20 text-[#3b82f6]' };
+  }
   if (allReady) {
     return { text: 'TAYYOR', className: 'bg-[#22c55e]/15 text-[#22c55e]' };
   }
-  return { text: 'TAYYORLANMOQDA', className: 'bg-[#3b82f6]/15 text-[#3b82f6]' };
+  if (anyPreparing) {
+    return { text: 'TAYYORLANMOQDA', className: 'bg-[#eab308]/15 text-[#eab308]' };
+  }
+  return { text: 'KUTILMOQDA', className: 'bg-[#71717a]/15 text-[#71717a]' };
 };
 
 export function OrderCard({ order, onPayClick, onDetailsClick, onPrintClick }: OrderCardProps) {
@@ -32,6 +86,12 @@ export function OrderCard({ order, onPayClick, onDetailsClick, onPrintClick }: O
   const remainingCount = activeItems.length - 3;
 
   const subtotal = activeItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+  // Status statistics
+  const pendingCount = activeItems.filter(i => i.status === 'pending').length;
+  const preparingCount = activeItems.filter(i => i.status === 'preparing').length;
+  const readyCount = activeItems.filter(i => i.status === 'ready').length;
+  const servedCount = activeItems.filter(i => i.status === 'served').length;
 
   return (
     <div
@@ -57,26 +117,61 @@ export function OrderCard({ order, onPayClick, onDetailsClick, onPrintClick }: O
         </span>
       </div>
 
+      {/* Status Progress Bar */}
+      {order.paymentStatus !== 'paid' && activeItems.length > 0 && (
+        <div className="px-5 py-2 bg-[#1a1a1a] flex gap-1 text-[10px]">
+          {pendingCount > 0 && (
+            <div className="flex items-center gap-1 px-2 py-1 rounded bg-[#71717a]/10 text-[#71717a]">
+              <BiTime className="text-xs" />
+              <span>{pendingCount}</span>
+            </div>
+          )}
+          {preparingCount > 0 && (
+            <div className="flex items-center gap-1 px-2 py-1 rounded bg-[#eab308]/10 text-[#eab308]">
+              <BiLoader className="text-xs animate-spin" />
+              <span>{preparingCount}</span>
+            </div>
+          )}
+          {readyCount > 0 && (
+            <div className="flex items-center gap-1 px-2 py-1 rounded bg-[#22c55e]/10 text-[#22c55e]">
+              <BiCheck className="text-xs" />
+              <span>{readyCount}</span>
+            </div>
+          )}
+          {servedCount > 0 && (
+            <div className="flex items-center gap-1 px-2 py-1 rounded bg-[#3b82f6]/10 text-[#3b82f6]">
+              <MdDeliveryDining className="text-xs" />
+              <span>{servedCount}</span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Items */}
       <div className="px-5 py-4">
         <div className="mb-4">
-          {displayItems.map((item, index) => (
-            <div
-              key={item._id}
-              className={`flex justify-between items-center py-2 ${index > 0 ? 'border-t border-border' : ''}`}
-            >
-              <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-                <span className="bg-[#262626] px-2.5 py-1 rounded-md text-xs font-semibold text-foreground min-w-[32px] text-center tabular-nums">
-                  {item.quantity}x
+          {displayItems.map((item, index) => {
+            const itemStatus = getItemStatusBadge(item.status);
+            const StatusIcon = itemStatus.icon;
+
+            return (
+              <div
+                key={item._id}
+                className={`flex justify-between items-center py-2 ${index > 0 ? 'border-t border-border' : ''}`}
+              >
+                <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                  <span className="bg-[#262626] px-2.5 py-1 rounded-md text-xs font-semibold text-foreground min-w-[32px] text-center tabular-nums">
+                    {item.quantity}x
+                  </span>
+                  <span className={itemStatus.className}>{item.name}</span>
+                  <StatusIcon className={`${itemStatus.className} text-sm`} />
+                </div>
+                <span className="text-sm text-muted-foreground tabular-nums">
+                  {formatMoney(item.price * item.quantity)}
                 </span>
-                <span className={item.status === 'ready' ? 'text-[#22c55e]' : ''}>{item.name}</span>
-                {item.status === 'ready' && <BiCheck className="text-[#22c55e]" />}
               </div>
-              <span className="text-sm text-muted-foreground tabular-nums">
-                {formatMoney(item.price * item.quantity)}
-              </span>
-            </div>
-          ))}
+            );
+          })}
           {remainingCount > 0 && (
             <button className="w-full py-2.5 mt-2 bg-secondary border border-dashed border-border rounded-lg text-[#3b82f6] text-sm font-medium hover:bg-[#262626] hover:border-[#3b82f6] transition-colors">
               +{remainingCount} ta boshqa taom

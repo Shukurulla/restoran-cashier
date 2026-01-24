@@ -1,3 +1,5 @@
+
+
 import { PrinterInfo, PaymentData } from '@/types';
 
 const PRINT_SERVER_URL = 'http://localhost:3847';
@@ -38,8 +40,8 @@ export const PrinterAPI = {
             price: item.price,
           })),
           totalPrice: paymentData.total,
+          serviceFee: paymentData.serviceFee,
           discount: 0,
-          paymentType: paymentData.paymentType,
         })
       });
       return await res.json();

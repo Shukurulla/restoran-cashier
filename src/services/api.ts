@@ -80,26 +80,106 @@ class ApiService {
   }
 
   async getOrders(): Promise<Order[]> {
-    const data = await this.request<{ orders: Order[] }>("/api/orders/today");
-    return data.orders;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await this.request<{ orders: any[] }>("/api/orders/today");
+
+    // Server ma'lumotlarini frontend Order tipiga transformatsiya qilish
+    return (data.orders || []).map((order, index) => {
+      const items = (order.selectFoods || order.allOrders || []).map((item: Record<string, unknown>, idx: number) => ({
+        _id: (item._id as string) || `item-${idx}`,
+        name: (item.name as string) || (item.foodName as string) || 'Noma\'lum',
+        quantity: (item.quantity as number) || 1,
+        price: (item.price as number) || 0,
+        status: (item.status as string) || 'pending',
+      }));
+
+      const subtotal = items.reduce((sum: number, item: { price: number; quantity: number }) =>
+        sum + item.price * item.quantity, 0);
+      const serviceFee = order.ofitsianService || Math.round(subtotal * 0.1);
+      const grandTotal = order.totalPrice || (subtotal + serviceFee);
+
+      return {
+        _id: order._id,
+        orderNumber: index + 1,
+        tableNumber: order.tableNumber || 0,
+        tableName: order.tableName || 'Noma\'lum stol',
+        items,
+        status: order.isPaid ? 'paid' : 'active',
+        paymentStatus: order.isPaid ? 'paid' : 'pending',
+        paymentType: order.paymentType,
+        total: subtotal,
+        serviceFee,
+        grandTotal,
+        waiter: {
+          _id: order.waiterId || '',
+          name: order.waiterName || 'Noma\'lum',
+        },
+        createdAt: order.createdAt,
+        paidAt: order.paidAt,
+      } as Order;
+    });
   }
 
   async getDailySummary(): Promise<DailySummary> {
-    return this.request<DailySummary>("/api/orders/daily-summary");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await this.request<any>("/api/orders/daily-summary");
+
+    return {
+      totalRevenue: data.totalRevenue || 0,
+      totalOrders: data.totalOrders || 0,
+      cashRevenue: data.cashRevenue || 0,
+      cardRevenue: data.cardRevenue || 0,
+      activeOrders: data.totalOrders - (data.paidOrders || 0),
+      paidOrders: data.paidOrders || 0,
+    };
   }
 
   async processPayment(
     orderId: string,
     paymentType: "cash" | "card",
   ): Promise<Order> {
-    const data = await this.request<{ order: Order }>(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await this.request<{ order: any }>(
       `/api/orders/${orderId}/pay`,
       {
         method: "POST",
         body: JSON.stringify({ paymentType }),
       },
     );
-    return data.order;
+
+    const order = data.order;
+    const items = (order.selectFoods || order.allOrders || []).map((item: Record<string, unknown>, idx: number) => ({
+      _id: (item._id as string) || `item-${idx}`,
+      name: (item.name as string) || (item.foodName as string) || 'Noma\'lum',
+      quantity: (item.quantity as number) || 1,
+      price: (item.price as number) || 0,
+      status: (item.status as string) || 'ready',
+    }));
+
+    const subtotal = items.reduce((sum: number, item: { price: number; quantity: number }) =>
+      sum + item.price * item.quantity, 0);
+    const serviceFee = order.ofitsianService || Math.round(subtotal * 0.1);
+    const grandTotal = order.totalPrice || (subtotal + serviceFee);
+
+    return {
+      _id: order._id,
+      orderNumber: 1,
+      tableNumber: order.tableNumber || 0,
+      tableName: order.tableName || 'Noma\'lum stol',
+      items,
+      status: 'paid',
+      paymentStatus: 'paid',
+      paymentType: order.paymentType,
+      total: subtotal,
+      serviceFee,
+      grandTotal,
+      waiter: {
+        _id: order.waiterId || '',
+        name: order.waiterName || 'Noma\'lum',
+      },
+      createdAt: order.createdAt,
+      paidAt: order.paidAt,
+    } as Order;
   }
 
   async getWaiterStats(): Promise<

@@ -1,5 +1,3 @@
-
-
 import { PrinterInfo, PaymentData } from '@/types';
 
 const PRINT_SERVER_URL = 'http://localhost:3847';
@@ -39,9 +37,11 @@ export const PrinterAPI = {
             quantity: item.quantity,
             price: item.price,
           })),
-          totalPrice: paymentData.total,
-          serviceFee: paymentData.serviceFee,
+          itemsTotal: paymentData.subtotal,       // Taomlar summasi
+          serviceFee: paymentData.serviceFee,     // Xizmat haqi (10%)
+          totalPrice: paymentData.total,          // Jami (taomlar + xizmat haqi)
           discount: 0,
+          // paymentType o'chirildi - checkda ko'rsatilmaydi
         })
       });
       return await res.json();

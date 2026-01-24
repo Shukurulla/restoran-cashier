@@ -17,11 +17,18 @@ export const PrinterAPI = {
   // To'lov cheki - C# TSPL orqali professional chop etish
   async printPayment(paymentData: PaymentData, printerName?: string): Promise<{ success: boolean; error?: string }> {
     try {
+      // Agar printerName berilmagan bo'lsa, localStorage dan olish
+      const selectedPrinter = printerName || (typeof window !== 'undefined' ? localStorage.getItem('selectedPrinter') : null);
+      
+      if (!selectedPrinter) {
+        return { success: false, error: 'Printer tanlanmagan. Sozlamalardan printer tanlang.' };
+      }
+
       const res = await fetch(`${PRINT_SERVER_URL}/print/payment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          printerName: printerName,
+          printerName: selectedPrinter,
           restaurantName: paymentData.restaurantName,
           tableName: paymentData.tableName,
           waiterName: paymentData.waiterName,
@@ -45,11 +52,17 @@ export const PrinterAPI = {
   // Test print - C# TSPL orqali
   async printTest(printerName?: string, restaurantName: string = 'KEPKET'): Promise<{ success: boolean; error?: string }> {
     try {
+      const selectedPrinter = printerName || (typeof window !== 'undefined' ? localStorage.getItem('selectedPrinter') : null);
+      
+      if (!selectedPrinter) {
+        return { success: false, error: 'Printer tanlanmagan' };
+      }
+
       const res = await fetch(`${PRINT_SERVER_URL}/print/test`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          printerName,
+          printerName: selectedPrinter,
           restaurantName 
         })
       });
@@ -71,6 +84,12 @@ export const PrinterAPI = {
     waiterStats?: Array<{ name: string; orders: number; revenue: number }>;
   }, printerName?: string): Promise<{ success: boolean; error?: string }> {
     try {
+      const selectedPrinter = printerName || (typeof window !== 'undefined' ? localStorage.getItem('selectedPrinter') : null);
+      
+      if (!selectedPrinter) {
+        return { success: false, error: 'Printer tanlanmagan' };
+      }
+
       // Hisobotni text formatda yaratish
       const lines: string[] = [];
       lines.push(reportData.restaurantName || 'RESTORAN');
@@ -109,7 +128,7 @@ export const PrinterAPI = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          printerName,
+          printerName: selectedPrinter,
           text: lines.join('\n')
         })
       });

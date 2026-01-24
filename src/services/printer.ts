@@ -1,6 +1,6 @@
 import { PrinterInfo, PaymentData } from '@/types';
 
-const PRINT_SERVER_URL = 'http://localhost:3847';
+const PRINT_SERVER_URL = 'http://localhost:5000';
 
 export const PrinterAPI = {
   async getPrinters(): Promise<PrinterInfo[]> {

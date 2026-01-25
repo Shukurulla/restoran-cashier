@@ -75,31 +75,31 @@ export function PaymentModal({ order, isOpen, onClose, onConfirm }: PaymentModal
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-card border-border max-w-[520px]">
-        <DialogHeader>
+      <DialogContent className="bg-card border-border max-w-[680px]">
+        <DialogHeader className="pb-3">
           <DialogTitle className="flex items-center gap-2.5 text-lg">
             <BiMoney className="text-[#22c55e]" />
             To&apos;lov qabul qilish
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-5 py-4">
-          {/* Order Info */}
-          <div className="bg-secondary rounded-xl p-4">
-            <div className="flex justify-between py-2 text-sm">
+        <div className="space-y-4 py-2">
+          {/* Order Info - bir qatorda */}
+          <div className="bg-secondary rounded-xl p-3 flex gap-6">
+            <div className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">Stol:</span>
               <span className="font-semibold">{order.tableName}</span>
             </div>
-            <div className="flex justify-between py-2 text-sm">
+            <div className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">Ofitsiant:</span>
               <span>{order.waiter.name}</span>
             </div>
           </div>
 
           {/* Items */}
-          <div className="bg-secondary rounded-xl p-4 max-h-[160px] overflow-y-auto">
+          <div className="bg-secondary rounded-xl p-3 max-h-[120px] overflow-y-auto">
             {activeItems.map((item) => (
-              <div key={item._id} className="flex justify-between py-2 border-b border-border last:border-0">
+              <div key={item._id} className="flex justify-between py-1.5 border-b border-border last:border-0">
                 <span className="text-sm">
                   <span className="font-medium">{item.quantity}x</span> {item.name}
                 </span>
@@ -110,31 +110,30 @@ export function PaymentModal({ order, isOpen, onClose, onConfirm }: PaymentModal
             ))}
           </div>
 
-          {/* Summary */}
-          <div className="bg-secondary rounded-xl p-4 space-y-2">
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Taomlar summasi:</span>
+          {/* Summary - bir qatorda */}
+          <div className="bg-secondary rounded-xl p-3 flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Taomlar:</span>
               <span className="tabular-nums">{formatMoney(subtotal)}</span>
             </div>
-            <div className="flex justify-between text-sm text-[#3b82f6] pb-3 border-b border-border">
-              <span>Xizmat haqi (10%):</span>
+            <div className="flex items-center gap-2 text-sm text-[#3b82f6] border-l border-border pl-4">
+              <span>Xizmat (10%):</span>
               <span className="tabular-nums">{formatMoney(order.serviceFee)}</span>
             </div>
-            <div className="flex justify-between pt-2">
-              <span className="font-medium">Jami to&apos;lov:</span>
-              <span className="text-2xl font-bold text-[#22c55e] tabular-nums">
+            <div className="flex items-center gap-3 ml-auto border-l border-border pl-4">
+              <span className="font-medium text-sm">Jami:</span>
+              <span className="text-xl font-bold text-[#22c55e] tabular-nums">
                 {formatMoney(grandTotal)}
               </span>
             </div>
           </div>
 
-          {/* Payment Mode Toggle */}
-          <div>
-            <h4 className="text-sm font-semibold text-muted-foreground mb-3">To&apos;lov usuli:</h4>
-            <div className="flex gap-2 mb-4">
+          {/* Payment Mode Toggle + Single Payment Type - bir qatorda */}
+          <div className="flex items-center gap-4">
+            <div className="flex gap-2">
               <button
                 onClick={() => setPaymentMode('single')}
-                className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all
+                className={`py-2 px-4 rounded-lg text-sm font-medium transition-all
                   ${paymentMode === 'single'
                     ? 'bg-[#22c55e] text-white'
                     : 'bg-secondary border border-border text-muted-foreground hover:border-[#404040]'
@@ -144,7 +143,7 @@ export function PaymentModal({ order, isOpen, onClose, onConfirm }: PaymentModal
               </button>
               <button
                 onClick={() => setPaymentMode('split')}
-                className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all
+                className={`py-2 px-4 rounded-lg text-sm font-medium transition-all
                   ${paymentMode === 'split'
                     ? 'bg-[#22c55e] text-white'
                     : 'bg-secondary border border-border text-muted-foreground hover:border-[#404040]'
@@ -153,115 +152,109 @@ export function PaymentModal({ order, isOpen, onClose, onConfirm }: PaymentModal
                 Bo&apos;lib to&apos;lash
               </button>
             </div>
-          </div>
 
-          {/* Single Payment Type Selection */}
-          {paymentMode === 'single' && (
-            <div>
-              <h4 className="text-sm font-semibold text-muted-foreground mb-3">To&apos;lov turi:</h4>
-              <div className="flex gap-3">
+            {/* Single Payment Type Selection - horizontal */}
+            {paymentMode === 'single' && (
+              <div className="flex gap-2 ml-auto">
                 <button
                   onClick={() => setSinglePaymentType('cash')}
-                  className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all
+                  className={`flex items-center gap-2 py-2.5 px-4 rounded-xl border-2 transition-all
                     ${singlePaymentType === 'cash'
                       ? 'border-[#22c55e] text-[#22c55e] bg-[#22c55e]/5'
                       : 'border-border text-muted-foreground hover:border-[#404040]'
                     }`}
                 >
-                  <BiMoney className="text-2xl" />
+                  <BiMoney className="text-xl" />
                   <span className="text-sm font-medium">Naqd</span>
                 </button>
                 <button
                   onClick={() => setSinglePaymentType('card')}
-                  className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all
+                  className={`flex items-center gap-2 py-2.5 px-4 rounded-xl border-2 transition-all
                     ${singlePaymentType === 'card'
                       ? 'border-[#3b82f6] text-[#3b82f6] bg-[#3b82f6]/5'
                       : 'border-border text-muted-foreground hover:border-[#404040]'
                     }`}
                 >
-                  <BiCreditCard className="text-2xl" />
+                  <BiCreditCard className="text-xl" />
                   <span className="text-sm font-medium">Plastik</span>
                 </button>
                 <button
                   onClick={() => setSinglePaymentType('click')}
-                  className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all
+                  className={`flex items-center gap-2 py-2.5 px-4 rounded-xl border-2 transition-all
                     ${singlePaymentType === 'click'
                       ? 'border-[#a855f7] text-[#a855f7] bg-[#a855f7]/5'
                       : 'border-border text-muted-foreground hover:border-[#404040]'
                     }`}
                 >
-                  <SiKlarna className="text-2xl" />
+                  <SiKlarna className="text-xl" />
                   <span className="text-sm font-medium">Click</span>
                 </button>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* Split Payment Inputs */}
+          {/* Split Payment Inputs - bir qatorda */}
           {paymentMode === 'split' && (
             <div className="space-y-3">
-              <h4 className="text-sm font-semibold text-muted-foreground">Summalarni kiriting:</h4>
+              <div className="flex gap-3">
+                {/* Naqd */}
+                <div className="flex-1 flex items-center gap-2 bg-secondary rounded-xl p-2.5">
+                  <div className="w-8 h-8 bg-[#22c55e]/10 rounded-lg flex items-center justify-center text-[#22c55e]">
+                    <BiMoney className="text-lg" />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs text-muted-foreground">Naqd</label>
+                    <input
+                      type="text"
+                      value={splitPayment.cash > 0 ? splitPayment.cash.toLocaleString() : ''}
+                      onChange={(e) => handleSplitChange('cash', e.target.value)}
+                      placeholder="0"
+                      className="w-full bg-transparent text-base font-semibold focus:outline-none tabular-nums"
+                    />
+                  </div>
+                </div>
 
-              {/* Naqd */}
-              <div className="flex items-center gap-3 bg-secondary rounded-xl p-3">
-                <div className="w-10 h-10 bg-[#22c55e]/10 rounded-lg flex items-center justify-center text-[#22c55e]">
-                  <BiMoney className="text-xl" />
+                {/* Plastik */}
+                <div className="flex-1 flex items-center gap-2 bg-secondary rounded-xl p-2.5">
+                  <div className="w-8 h-8 bg-[#3b82f6]/10 rounded-lg flex items-center justify-center text-[#3b82f6]">
+                    <BiCreditCard className="text-lg" />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs text-muted-foreground">Plastik</label>
+                    <input
+                      type="text"
+                      value={splitPayment.card > 0 ? splitPayment.card.toLocaleString() : ''}
+                      onChange={(e) => handleSplitChange('card', e.target.value)}
+                      placeholder="0"
+                      className="w-full bg-transparent text-base font-semibold focus:outline-none tabular-nums"
+                    />
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <label className="text-xs text-muted-foreground">Naqd</label>
-                  <input
-                    type="text"
-                    value={splitPayment.cash > 0 ? splitPayment.cash.toLocaleString() : ''}
-                    onChange={(e) => handleSplitChange('cash', e.target.value)}
-                    placeholder="0"
-                    className="w-full bg-transparent text-lg font-semibold focus:outline-none tabular-nums"
-                  />
-                </div>
-                <span className="text-muted-foreground text-sm">so&apos;m</span>
-              </div>
 
-              {/* Plastik */}
-              <div className="flex items-center gap-3 bg-secondary rounded-xl p-3">
-                <div className="w-10 h-10 bg-[#3b82f6]/10 rounded-lg flex items-center justify-center text-[#3b82f6]">
-                  <BiCreditCard className="text-xl" />
+                {/* Click */}
+                <div className="flex-1 flex items-center gap-2 bg-secondary rounded-xl p-2.5">
+                  <div className="w-8 h-8 bg-[#a855f7]/10 rounded-lg flex items-center justify-center text-[#a855f7]">
+                    <SiKlarna className="text-lg" />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs text-muted-foreground">Click</label>
+                    <input
+                      type="text"
+                      value={splitPayment.click > 0 ? splitPayment.click.toLocaleString() : ''}
+                      onChange={(e) => handleSplitChange('click', e.target.value)}
+                      placeholder="0"
+                      className="w-full bg-transparent text-base font-semibold focus:outline-none tabular-nums"
+                    />
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <label className="text-xs text-muted-foreground">Plastik</label>
-                  <input
-                    type="text"
-                    value={splitPayment.card > 0 ? splitPayment.card.toLocaleString() : ''}
-                    onChange={(e) => handleSplitChange('card', e.target.value)}
-                    placeholder="0"
-                    className="w-full bg-transparent text-lg font-semibold focus:outline-none tabular-nums"
-                  />
-                </div>
-                <span className="text-muted-foreground text-sm">so&apos;m</span>
-              </div>
-
-              {/* Click */}
-              <div className="flex items-center gap-3 bg-secondary rounded-xl p-3">
-                <div className="w-10 h-10 bg-[#a855f7]/10 rounded-lg flex items-center justify-center text-[#a855f7]">
-                  <SiKlarna className="text-xl" />
-                </div>
-                <div className="flex-1">
-                  <label className="text-xs text-muted-foreground">Click</label>
-                  <input
-                    type="text"
-                    value={splitPayment.click > 0 ? splitPayment.click.toLocaleString() : ''}
-                    onChange={(e) => handleSplitChange('click', e.target.value)}
-                    placeholder="0"
-                    className="w-full bg-transparent text-lg font-semibold focus:outline-none tabular-nums"
-                  />
-                </div>
-                <span className="text-muted-foreground text-sm">so&apos;m</span>
               </div>
 
               {/* Remaining Amount */}
-              <div className={`flex justify-between items-center p-3 rounded-xl ${
+              <div className={`flex justify-between items-center p-2.5 rounded-xl ${
                 Math.abs(remaining) < 100 ? 'bg-[#22c55e]/10 text-[#22c55e]' : 'bg-[#ef4444]/10 text-[#ef4444]'
               }`}>
                 <span className="text-sm font-medium">Qolgan summa:</span>
-                <span className="text-lg font-bold tabular-nums">{formatMoney(remaining)}</span>
+                <span className="text-base font-bold tabular-nums">{formatMoney(remaining)}</span>
               </div>
             </div>
           )}

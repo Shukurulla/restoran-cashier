@@ -131,34 +131,34 @@ export function SaboyModal({ isOpen, onClose, onSuccess }: SaboyModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-card border-border max-w-[1600px] w-[95vw] max-h-[95vh] overflow-hidden flex flex-col">
-        <DialogHeader className="pb-3">
-          <DialogTitle className="flex items-center gap-2.5 text-lg">
-            <BiPackage className="text-[#f97316]" />
+      <DialogContent className="bg-card border-border !max-w-[1600px] w-[95vw] h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="pb-4">
+          <DialogTitle className="flex items-center gap-3 text-xl">
+            <BiPackage className="text-[#f97316] text-2xl" />
             Saboy (Olib ketish)
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 flex gap-4 overflow-hidden min-h-0">
+        <div className="flex-1 flex gap-6 overflow-hidden min-h-[500px]">
           {/* Chap tomon - Menu */}
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden min-w-[500px]">
             {/* Qidiruv */}
-            <div className="relative mb-3">
-              <BiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <div className="relative mb-4">
+              <BiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-lg" />
               <input
                 type="text"
                 placeholder="Taom qidirish..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-secondary border border-border rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-[#3b82f6]"
+                className="w-full bg-secondary border border-border rounded-xl py-3 pl-12 pr-4 text-base focus:outline-none focus:border-[#3b82f6]"
               />
             </div>
 
             {/* Kategoriyalar */}
-            <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
+            <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
               <button
                 onClick={() => setSelectedCategory('all')}
-                className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-all
+                className={`px-4 py-2 rounded-xl text-sm whitespace-nowrap transition-all
                   ${selectedCategory === 'all'
                     ? 'bg-[#f97316] text-white'
                     : 'bg-secondary text-muted-foreground hover:bg-[#262626]'
@@ -170,7 +170,7 @@ export function SaboyModal({ isOpen, onClose, onSuccess }: SaboyModalProps) {
                 <button
                   key={cat._id}
                   onClick={() => setSelectedCategory(cat._id)}
-                  className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-all
+                  className={`px-4 py-2 rounded-xl text-sm whitespace-nowrap transition-all
                     ${selectedCategory === cat._id
                       ? 'bg-[#f97316] text-white'
                       : 'bg-secondary text-muted-foreground hover:bg-[#262626]'
@@ -182,37 +182,41 @@ export function SaboyModal({ isOpen, onClose, onSuccess }: SaboyModalProps) {
             </div>
 
             {/* Taomlar */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto min-h-[300px]">
               {isLoadingMenu ? (
-                <div className="flex items-center justify-center h-32">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#f97316]"></div>
+                <div className="flex items-center justify-center h-full">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#f97316]"></div>
+                </div>
+              ) : filteredItems.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  {menuItems.length === 0 ? 'Menyu yuklanmadi' : 'Taom topilmadi'}
                 </div>
               ) : (
-                <div className="grid grid-cols-3 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                   {filteredItems.map(item => {
                     const qty = getItemQuantity(item._id);
                     return (
                       <div
                         key={item._id}
-                        className={`bg-secondary rounded-lg p-3 flex flex-col transition-all cursor-pointer
+                        className={`bg-secondary rounded-lg p-4 flex flex-col transition-all cursor-pointer
                           ${qty > 0 ? 'ring-2 ring-[#f97316]' : 'hover:bg-[#262626]'}`}
                         onClick={() => addItem(item)}
                       >
                         <span className="text-sm font-medium truncate">{item.name}</span>
-                        <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center justify-between mt-3">
                           <span className="text-xs text-muted-foreground">{formatMoney(item.price)}</span>
                           {qty > 0 && (
                             <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                               <button
                                 onClick={() => removeItem(item._id)}
-                                className="w-6 h-6 bg-[#ef4444] rounded flex items-center justify-center text-white"
+                                className="w-7 h-7 bg-[#ef4444] rounded flex items-center justify-center text-white"
                               >
                                 <BiMinus className="text-sm" />
                               </button>
                               <span className="text-sm font-semibold w-6 text-center">{qty}</span>
                               <button
                                 onClick={() => addItem(item)}
-                                className="w-6 h-6 bg-[#22c55e] rounded flex items-center justify-center text-white"
+                                className="w-7 h-7 bg-[#22c55e] rounded flex items-center justify-center text-white"
                               >
                                 <BiPlus className="text-sm" />
                               </button>
@@ -228,35 +232,35 @@ export function SaboyModal({ isOpen, onClose, onSuccess }: SaboyModalProps) {
           </div>
 
           {/* O'ng tomon - Tanlangan taomlar */}
-          <div className="w-[400px] flex flex-col bg-secondary rounded-xl p-4">
-            <h3 className="font-semibold text-sm mb-3">Tanlangan taomlar</h3>
+          <div className="w-[450px] flex flex-col bg-secondary rounded-xl p-5">
+            <h3 className="font-semibold text-base mb-4">Tanlangan taomlar</h3>
 
             {/* Tanlangan taomlar ro'yxati */}
-            <div className="flex-1 overflow-y-auto space-y-2 mb-4">
+            <div className="flex-1 overflow-y-auto space-y-3 mb-4">
               {selectedItems.length === 0 ? (
-                <div className="text-center text-muted-foreground text-sm py-8">
+                <div className="text-center text-muted-foreground text-base py-12">
                   Taom tanlanmagan
                 </div>
               ) : (
                 selectedItems.map(item => (
-                  <div key={item._id} className="flex items-center gap-2 bg-[#1a1a1a] rounded-lg p-2">
+                  <div key={item._id} className="flex items-center gap-3 bg-[#1a1a1a] rounded-xl p-3">
                     <div className="flex-1 min-w-0">
-                      <span className="text-sm truncate block">{item.name}</span>
-                      <span className="text-xs text-muted-foreground">{formatMoney(item.price)}</span>
+                      <span className="text-base truncate block">{item.name}</span>
+                      <span className="text-sm text-muted-foreground">{formatMoney(item.price)}</span>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => removeItem(item._id)}
-                        className="w-5 h-5 bg-[#ef4444] rounded flex items-center justify-center text-white"
+                        className="w-8 h-8 bg-[#ef4444] rounded-lg flex items-center justify-center text-white"
                       >
-                        <BiMinus className="text-xs" />
+                        <BiMinus className="text-base" />
                       </button>
-                      <span className="text-xs font-semibold w-5 text-center">{item.quantity}</span>
+                      <span className="text-base font-semibold w-8 text-center">{item.quantity}</span>
                       <button
                         onClick={() => addItem(item)}
-                        className="w-5 h-5 bg-[#22c55e] rounded flex items-center justify-center text-white"
+                        className="w-8 h-8 bg-[#22c55e] rounded-lg flex items-center justify-center text-white"
                       >
-                        <BiPlus className="text-xs" />
+                        <BiPlus className="text-base" />
                       </button>
                     </div>
                   </div>
@@ -265,74 +269,74 @@ export function SaboyModal({ isOpen, onClose, onSuccess }: SaboyModalProps) {
             </div>
 
             {/* To'lov turi */}
-            <div className="mb-4">
-              <span className="text-xs text-muted-foreground block mb-2">To&apos;lov turi:</span>
-              <div className="flex gap-2">
+            <div className="mb-5">
+              <span className="text-sm text-muted-foreground block mb-3">To&apos;lov turi:</span>
+              <div className="flex gap-3">
                 <button
                   onClick={() => setPaymentType('cash')}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border-2 transition-all
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 transition-all
                     ${paymentType === 'cash'
                       ? 'border-[#22c55e] text-[#22c55e] bg-[#22c55e]/5'
                       : 'border-border text-muted-foreground hover:border-[#404040]'
                     }`}
                 >
-                  <BiMoney className="text-lg" />
-                  <span className="text-xs">Naqd</span>
+                  <BiMoney className="text-xl" />
+                  <span className="text-sm">Naqd</span>
                 </button>
                 <button
                   onClick={() => setPaymentType('card')}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border-2 transition-all
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 transition-all
                     ${paymentType === 'card'
                       ? 'border-[#3b82f6] text-[#3b82f6] bg-[#3b82f6]/5'
                       : 'border-border text-muted-foreground hover:border-[#404040]'
                     }`}
                 >
-                  <BiCreditCard className="text-lg" />
-                  <span className="text-xs">Karta</span>
+                  <BiCreditCard className="text-xl" />
+                  <span className="text-sm">Karta</span>
                 </button>
                 <button
                   onClick={() => setPaymentType('click')}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border-2 transition-all
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 transition-all
                     ${paymentType === 'click'
                       ? 'border-[#a855f7] text-[#a855f7] bg-[#a855f7]/5'
                       : 'border-border text-muted-foreground hover:border-[#404040]'
                     }`}
                 >
-                  <SiKlarna className="text-lg" />
-                  <span className="text-xs">Click</span>
+                  <SiKlarna className="text-xl" />
+                  <span className="text-sm">Click</span>
                 </button>
               </div>
             </div>
 
             {/* Jami */}
-            <div className="bg-[#1a1a1a] rounded-lg p-3 mb-4">
+            <div className="bg-[#1a1a1a] rounded-xl p-4 mb-4">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Jami:</span>
-                <span className="text-xl font-bold text-[#f97316]">{formatMoney(total)}</span>
+                <span className="text-base text-muted-foreground">Jami:</span>
+                <span className="text-2xl font-bold text-[#f97316]">{formatMoney(total)}</span>
               </div>
-              <div className="text-xs text-muted-foreground mt-1">
+              <div className="text-sm text-muted-foreground mt-2">
                 Xizmat haqi yo&apos;q (Saboy)
               </div>
             </div>
           </div>
         </div>
 
-        <DialogFooter className="gap-3 pt-4">
+        <DialogFooter className="gap-4 pt-5">
           <Button
             variant="outline"
             onClick={onClose}
             disabled={isLoading}
-            className="flex-1"
+            className="flex-1 h-12 text-base"
           >
-            <BiX className="mr-2" />
+            <BiX className="mr-2 text-lg" />
             Bekor qilish
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={isLoading || selectedItems.length === 0}
-            className="flex-1 bg-[#f97316] hover:bg-[#f97316]/90 text-white"
+            className="flex-1 h-12 text-base bg-[#f97316] hover:bg-[#f97316]/90 text-white"
           >
-            <BiCheck className="mr-2" />
+            <BiCheck className="mr-2 text-lg" />
             {isLoading ? 'Kutilmoqda...' : `To'lovni tasdiqlash`}
           </Button>
         </DialogFooter>

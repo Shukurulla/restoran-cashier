@@ -268,38 +268,57 @@ class ApiService {
   // Menu (taomlar) ro'yxatini olish
   async getMenuItems(): Promise<{ _id: string; name: string; price: number; category: string; categoryName?: string }[]> {
     const restaurant = this.getStoredRestaurant();
-    console.log('getMenuItems - restaurant:', restaurant);
     if (!restaurant || !restaurant._id) {
       console.warn('getMenuItems - restaurant or _id is missing, returning empty array');
       return [];
     }
 
-    const data = await this.request<{ data: { _id: string; foodName: string; price: number; category: string }[] }>(
-      `/foods?restaurantId=${restaurant._id}`
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const response = await this.request<any>('/api/waiter/foods');
+
+    // Handle flexible response format
+    const data = Array.isArray(response) ? response : (response.data || response.foods || []);
+
+    // Filter by restaurantId on client side
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const filteredFoods = data.filter((item: any) =>
+      item.restaurantId === restaurant._id || !item.restaurantId
     );
 
-    return (data.data || []).map(item => ({
-      _id: item._id,
-      name: item.foodName,
-      price: item.price,
-      category: item.category,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return filteredFoods.map((item: any) => ({
+      _id: item._id || item.id,
+      name: item.foodName || item.name,
+      price: item.price || 0,
+      category: item.category || '',
     }));
   }
 
   // Kategoriyalar ro'yxatini olish
   async getCategories(): Promise<{ _id: string; title: string }[]> {
     const restaurant = this.getStoredRestaurant();
-    console.log('getCategories - restaurant:', restaurant);
     if (!restaurant || !restaurant._id) {
       console.warn('getCategories - restaurant or _id is missing, returning empty array');
       return [];
     }
 
-    const data = await this.request<{ data: { _id: string; title: string }[] }>(
-      `/category?restaurantId=${restaurant._id}`
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const response = await this.request<any>('/api/waiter/categories');
+
+    // Handle flexible response format
+    const data = Array.isArray(response) ? response : (response.data || response.categories || []);
+
+    // Filter by restaurantId on client side
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const filteredCategories = data.filter((item: any) =>
+      item.restaurantId === restaurant._id || !item.restaurantId
     );
 
-    return data.data || [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return filteredCategories.map((item: any) => ({
+      _id: item._id || item.id,
+      title: item.title || item.name || '',
+    }));
   }
 }
 

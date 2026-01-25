@@ -250,7 +250,7 @@ class ApiService {
   // Menu (taomlar) ro'yxatini olish
   async getMenuItems(): Promise<{ _id: string; name: string; price: number; category: string; categoryName?: string }[]> {
     const restaurant = this.getStoredRestaurant();
-    if (!restaurant) return [];
+    if (!restaurant || !restaurant._id) return [];
 
     const data = await this.request<{ data: { _id: string; foodName: string; price: number; category: string }[] }>(
       `/foods?restaurantId=${restaurant._id}`
@@ -267,7 +267,7 @@ class ApiService {
   // Kategoriyalar ro'yxatini olish
   async getCategories(): Promise<{ _id: string; title: string }[]> {
     const restaurant = this.getStoredRestaurant();
-    if (!restaurant) return [];
+    if (!restaurant || !restaurant._id) return [];
 
     const data = await this.request<{ data: { _id: string; title: string }[] }>(
       `/category?restaurantId=${restaurant._id}`

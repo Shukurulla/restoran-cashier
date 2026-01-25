@@ -131,7 +131,7 @@ export function SaboyModal({ isOpen, onClose, onSuccess }: SaboyModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-card border-border max-w-[900px] max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="bg-card border-border max-w-[1600px] w-[95vw] max-h-[95vh] overflow-hidden flex flex-col">
         <DialogHeader className="pb-3">
           <DialogTitle className="flex items-center gap-2.5 text-lg">
             <BiPackage className="text-[#f97316]" />
@@ -188,7 +188,7 @@ export function SaboyModal({ isOpen, onClose, onSuccess }: SaboyModalProps) {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#f97316]"></div>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 lg:grid-cols-4 gap-3">
                   {filteredItems.map(item => {
                     const qty = getItemQuantity(item._id);
                     return (
@@ -228,7 +228,7 @@ export function SaboyModal({ isOpen, onClose, onSuccess }: SaboyModalProps) {
           </div>
 
           {/* O'ng tomon - Tanlangan taomlar */}
-          <div className="w-[280px] flex flex-col bg-secondary rounded-xl p-4">
+          <div className="w-[400px] flex flex-col bg-secondary rounded-xl p-4">
             <h3 className="font-semibold text-sm mb-3">Tanlangan taomlar</h3>
 
             {/* Tanlangan taomlar ro'yxati */}

@@ -164,41 +164,6 @@ export function Dashboard() {
     try {
       const paidOrder = await api.processPayment(orderId, paymentType, paymentSplit, comment);
 
-      // Print receipt
-      const selectedPrinter =
-        localStorage.getItem("selectedPrinter") || undefined;
-
-      if (selectedPrinter) {
-        const printResult = await PrinterAPI.printPayment(
-          {
-            orderId: paidOrder._id,
-            orderNumber: paidOrder.orderNumber,
-            tableName: paidOrder.tableName,
-            waiterName: paidOrder.waiter.name,
-            items: paidOrder.items
-              .filter((item) => item.status !== "cancelled")
-              .map((item) => ({
-                name: item.name,
-                quantity: item.quantity,
-                price: item.price,
-              })),
-            subtotal: paidOrder.total,
-            serviceFee: paidOrder.serviceFee,
-            total: paidOrder.grandTotal,
-            paymentType,
-            paymentSplit,
-            comment,
-            restaurantName: restaurant?.name || "Restoran",
-            date: new Date().toLocaleString("uz-UZ"),
-          },
-          selectedPrinter,
-        );
-
-        if (!printResult.success) {
-          console.error("Chek chiqarishda xatolik:", printResult.error);
-        }
-      }
-
       // Update local state
       setOrders((prev) => prev.map((o) => (o._id === orderId ? paidOrder : o)));
       loadData();

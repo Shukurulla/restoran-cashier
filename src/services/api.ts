@@ -1,7 +1,8 @@
 import { User, Restaurant, Order, DailySummary, PaymentType, PaymentSplit, SaboyItem } from "@/types";
 
+// Yangi backend v2 URL
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://server.kepket.uz";
+  process.env.NEXT_PUBLIC_API_URL || "https://server-v2.kepket.uz";
 
 class ApiService {
   private token: string | null = null;
@@ -56,70 +57,92 @@ class ApiService {
     return res.json();
   }
 
+  // ========== AUTH (yangi endpoint: /api/auth/login) ==========
   async login(
     phone: string,
     password: string,
   ): Promise<{ user: User; token: string; restaurant: Restaurant }> {
-    const data = await this.request<{
-      staff: User;
-      token: string;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      restaurant: any;
-    }>("/api/staff/login", {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await this.request<any>("/api/auth/login", {
       method: "POST",
       body: JSON.stringify({ phone, password }),
     });
 
-    this.setToken(data.token);
+    // Yangi backend response: { success, data: { staff, token, restaurant } }
+    const responseData = data.data || data;
+    this.setToken(responseData.token);
 
-    // Normalize restaurant data - handle both 'id' and '_id' cases
+    const staff = responseData.staff;
+    const user: User = {
+      _id: staff._id,
+      name: `${staff.firstName} ${staff.lastName}`,
+      phone: staff.phone,
+      role: staff.role,
+      restaurantId: staff.restaurantId,
+    };
+
     const restaurant: Restaurant = {
-      _id: data.restaurant?._id || data.restaurant?.id || '',
-      name: data.restaurant?.name || '',
+      _id: responseData.restaurant?._id || '',
+      name: responseData.restaurant?.name || '',
     };
 
     if (typeof window !== "undefined") {
-      localStorage.setItem("user", JSON.stringify(data.staff));
+      localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("restaurant", JSON.stringify(restaurant));
     }
 
-    return { user: data.staff, token: data.token, restaurant };
+    return { user, token: responseData.token, restaurant };
   }
 
+  // ========== ORDERS (yangi format: items[] massiv) ==========
   async getOrders(): Promise<Order[]> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = await this.request<{ orders: any[] }>("/api/orders/today");
+    const data = await this.request<any>("/api/orders/today");
 
-    // Server ma'lumotlarini frontend Order tipiga transformatsiya qilish
-    return (data.orders || []).map((order, index) => {
-      const items = (order.selectFoods || order.allOrders || []).map((item: Record<string, unknown>, idx: number) => ({
-        _id: (item._id as string) || `item-${idx}`,
-        name: (item.name as string) || (item.foodName as string) || 'Noma\'lum',
-        quantity: (item.quantity as number) || 1,
-        price: (item.price as number) || 0,
-        status: (item.status as string) || 'pending',
+    // Yangi backend: { success, data: { orders } }
+    const orders = data.data?.orders || data.data || data.orders || [];
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return orders.map((order: any, index: number) => {
+      // Yangi format: items[] (eski selectFoods/allOrders o'rniga)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const items = (order.items || []).map((item: any, idx: number) => ({
+        _id: item._id || `item-${idx}`,
+        name: item.foodId?.name || item.foodName || item.name || 'Noma\'lum',
+        quantity: item.quantity || 1,
+        price: item.price || 0,
+        status: item.status || item.kitchenStatus || 'pending',
       }));
 
-      const subtotal = items.reduce((sum: number, item: { price: number; quantity: number }) =>
-        sum + item.price * item.quantity, 0);
-      const serviceFee = order.ofitsianService || Math.round(subtotal * 0.1);
-      const grandTotal = subtotal + serviceFee;
+      const tableNumber = order.tableId?.number || order.tableNumber || 0;
+      const tableName = order.tableId?.number ? `Stol ${order.tableId.number}` : (order.tableName || 'Noma\'lum stol');
+
+      // Agar backend summalarni qaytarmasa, frontendda hisoblaymiz
+      const subtotal = order.subtotal || items.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0);
+      const serviceChargePercent = order.serviceChargePercent || 10;
+      const serviceCharge = order.serviceCharge || Math.round(subtotal * (serviceChargePercent / 100));
+      const grandTotal = order.grandTotal || (subtotal + serviceCharge);
+
+      // To'lov statusi: isPaid yoki status === 'paid'
+      const isPaid = order.isPaid === true || order.status === 'paid';
 
       return {
         _id: order._id,
-        orderNumber: index + 1,
-        tableNumber: order.tableNumber || 0,
-        tableName: order.tableName || 'Noma\'lum stol',
+        orderNumber: order.orderNumber || index + 1,
+        tableNumber,
+        tableName,
         items,
-        status: order.isPaid ? 'paid' : 'active',
-        paymentStatus: order.isPaid ? 'paid' : 'pending',
+        status: isPaid ? 'paid' : 'active',
+        paymentStatus: isPaid ? 'paid' : 'pending',
         paymentType: order.paymentType,
         total: subtotal,
-        serviceFee,
-        grandTotal,
+        serviceFee: serviceCharge,
+        grandTotal: grandTotal,
         waiter: {
-          _id: order.waiterId || '',
-          name: order.waiterName || 'Noma\'lum',
+          _id: order.waiterId?._id || order.waiterId || '',
+          name: order.waiterId?.firstName
+            ? `${order.waiterId.firstName} ${order.waiterId.lastName}`
+            : (order.waiterName || 'Noma\'lum'),
         },
         createdAt: order.createdAt,
         paidAt: order.paidAt,
@@ -129,16 +152,35 @@ class ApiService {
 
   async getDailySummary(): Promise<DailySummary> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = await this.request<any>("/api/orders/daily-summary");
+    const data = await this.request<any>("/api/reports/dashboard?period=today");
+
+    const summary = data.data?.summary || data.summary || {};
+
+    // To'lov turlari bo'yicha
+    let cashRevenue = 0, cardRevenue = 0, clickRevenue = 0;
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const paymentData = await this.request<any>(`/api/reports/payments?startDate=${today}`);
+      const breakdown = paymentData.data?.paymentBreakdown || [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      cashRevenue = breakdown.find((p: any) => p.method === 'cash')?.total || 0;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      cardRevenue = breakdown.find((p: any) => p.method === 'card')?.total || 0;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      clickRevenue = breakdown.find((p: any) => p.method === 'click')?.total || 0;
+    } catch {
+      // Ignore payment report errors
+    }
 
     return {
-      totalRevenue: data.totalRevenue || 0,
-      totalOrders: data.totalOrders || 0,
-      cashRevenue: data.cashRevenue || 0,
-      cardRevenue: data.cardRevenue || 0,
-      clickRevenue: data.clickRevenue || 0,
-      activeOrders: data.totalOrders - (data.paidOrders || 0),
-      paidOrders: data.paidOrders || 0,
+      totalRevenue: summary.totalRevenue || 0,
+      totalOrders: summary.totalOrders || 0,
+      cashRevenue,
+      cardRevenue,
+      clickRevenue,
+      activeOrders: (summary.totalOrders || 0) - (summary.completedOrders || 0),
+      paidOrders: summary.completedOrders || 0,
     };
   }
 
@@ -149,47 +191,51 @@ class ApiService {
     comment?: string,
   ): Promise<Order> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = await this.request<{ order: any }>(
+    const data = await this.request<any>(
       `/api/orders/${orderId}/pay`,
       {
         method: "POST",
         body: JSON.stringify({
-          paymentType,
+          paymentType: paymentType,
           paymentSplit,
-          comment,
+          comment: comment,
         }),
       },
     );
 
-    const order = data.order;
-    const items = (order.selectFoods || order.allOrders || []).map((item: Record<string, unknown>, idx: number) => ({
-      _id: (item._id as string) || `item-${idx}`,
-      name: (item.name as string) || (item.foodName as string) || 'Noma\'lum',
-      quantity: (item.quantity as number) || 1,
-      price: (item.price as number) || 0,
-      status: (item.status as string) || 'ready',
+    const order = data.data || data.order || data;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const items = (order.items || []).map((item: any, idx: number) => ({
+      _id: item._id || `item-${idx}`,
+      name: item.foodId?.name || item.foodName || item.name || 'Noma\'lum',
+      quantity: item.quantity || 1,
+      price: item.price || 0,
+      status: 'ready',
     }));
 
-    const subtotal = items.reduce((sum: number, item: { price: number; quantity: number }) =>
-      sum + item.price * item.quantity, 0);
-    const serviceFee = order.ofitsianService || Math.round(subtotal * 0.1);
-    const grandTotal = subtotal + serviceFee;
+    // Agar backend summalarni qaytarmasa, frontendda hisoblaymiz
+    const subtotal = order.subtotal || items.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0);
+    const serviceChargePercent = order.serviceChargePercent || 10;
+    const serviceCharge = order.serviceCharge || Math.round(subtotal * (serviceChargePercent / 100));
+    const grandTotal = order.grandTotal || (subtotal + serviceCharge);
 
     return {
       _id: order._id,
-      orderNumber: 1,
-      tableNumber: order.tableNumber || 0,
-      tableName: order.tableName || 'Noma\'lum stol',
+      orderNumber: order.orderNumber || 1,
+      tableNumber: order.tableId?.number || 0,
+      tableName: `Stol ${order.tableId?.number || 0}`,
       items,
       status: 'paid',
       paymentStatus: 'paid',
       paymentType: order.paymentType,
       total: subtotal,
-      serviceFee,
-      grandTotal,
+      serviceFee: serviceCharge,
+      grandTotal: grandTotal,
       waiter: {
-        _id: order.waiterId || '',
-        name: order.waiterName || 'Noma\'lum',
+        _id: order.waiterId?._id || '',
+        name: order.waiterId?.firstName
+          ? `${order.waiterId.firstName} ${order.waiterId.lastName}`
+          : 'Noma\'lum',
       },
       createdAt: order.createdAt,
       paidAt: order.paidAt,
@@ -199,10 +245,15 @@ class ApiService {
   async getWaiterStats(): Promise<
     { name: string; orders: number; revenue: number }[]
   > {
-    const data = await this.request<{
-      stats: { name: string; orders: number; revenue: number }[];
-    }>("/api/orders/waiter-stats");
-    return data.stats;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await this.request<any>("/api/reports/staff");
+    const staff = data.data?.staff || data.staff || [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return staff.map((s: any) => ({
+      name: s.name,
+      orders: s.totalOrders || 0,
+      revenue: s.totalRevenue || 0,
+    }));
   }
 
   getStoredUser(): User | null {
@@ -218,7 +269,6 @@ class ApiService {
 
     try {
       const parsed = JSON.parse(restaurantStr);
-      // Handle both 'id' and '_id' cases
       return {
         _id: parsed._id || parsed.id || '',
         name: parsed.name || '',
@@ -228,7 +278,7 @@ class ApiService {
     }
   }
 
-  // Saboy order yaratish - to'g'ridan-to'g'ri to'langan
+  // ========== SABOY ==========
   async createSaboyOrder(
     items: SaboyItem[],
     paymentType: PaymentType,
@@ -240,84 +290,64 @@ class ApiService {
       throw new Error("Restoran topilmadi");
     }
 
-    const data = await this.request<{
-      success: boolean;
-      saboyNumber: number;
-      grandTotal: number;
-    }>("/api/orders/saboy", {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await this.request<any>("/api/orders/saboy", {
       method: "POST",
       body: JSON.stringify({
-        restaurantId: restaurant._id,
         items: items.map(item => ({
-          _id: item._id,
+          foodId: item._id,
           name: item.name,
-          foodName: item.name,
           price: item.price,
           quantity: item.quantity,
-          category: item.category,
         })),
-        paymentType,
+        paymentMethod: paymentType,
         paymentSplit,
-        comment,
+        notes: comment,
       }),
     });
 
-    return data;
+    return {
+      success: data.success,
+      saboyNumber: data.data?.orderNumber || 0,
+      grandTotal: data.data?.finalTotal || 0,
+    };
   }
 
-  // Menu (taomlar) ro'yxatini olish
+  // ========== MENU (yangi endpoint: /api/foods/menu) ==========
   async getMenuItems(): Promise<{ _id: string; name: string; price: number; category: string; categoryName?: string }[]> {
-    const restaurant = this.getStoredRestaurant();
-    if (!restaurant || !restaurant._id) {
-      console.warn('getMenuItems - restaurant or _id is missing, returning empty array');
-      return [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const response = await this.request<any>('/api/foods/menu');
+
+    const menu = response.data || response || [];
+    const foods: { _id: string; name: string; price: number; category: string; categoryName?: string }[] = [];
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const category of menu) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (const food of (category.foods || [])) {
+        foods.push({
+          _id: food._id,
+          name: food.name,
+          price: food.price || 0,
+          category: category._id,
+          categoryName: category.name,
+        });
+      }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const response = await this.request<any>('/api/waiter/foods');
-
-    // Handle flexible response format
-    const data = Array.isArray(response) ? response : (response.data || response.foods || []);
-
-    // Filter by restaurantId on client side
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const filteredFoods = data.filter((item: any) =>
-      item.restaurantId === restaurant._id || !item.restaurantId
-    );
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return filteredFoods.map((item: any) => ({
-      _id: item._id || item.id,
-      name: item.foodName || item.name,
-      price: item.price || 0,
-      category: item.category || '',
-    }));
+    return foods;
   }
 
-  // Kategoriyalar ro'yxatini olish
+  // ========== CATEGORIES (yangi endpoint: /api/categories) ==========
   async getCategories(): Promise<{ _id: string; title: string }[]> {
-    const restaurant = this.getStoredRestaurant();
-    if (!restaurant || !restaurant._id) {
-      console.warn('getCategories - restaurant or _id is missing, returning empty array');
-      return [];
-    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const response = await this.request<any>('/api/categories');
+    const categories = response.data || response || [];
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const response = await this.request<any>('/api/waiter/categories');
-
-    // Handle flexible response format
-    const data = Array.isArray(response) ? response : (response.data || response.categories || []);
-
-    // Filter by restaurantId on client side
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const filteredCategories = data.filter((item: any) =>
-      item.restaurantId === restaurant._id || !item.restaurantId
-    );
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return filteredCategories.map((item: any) => ({
-      _id: item._id || item.id,
-      title: item.title || item.name || '',
+    return categories.map((cat: any) => ({
+      _id: cat._id,
+      title: cat.name || cat.title || '',
     }));
   }
 }

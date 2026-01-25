@@ -15,7 +15,7 @@ import { ReportsModal } from "./ReportsModal";
 import { OrderDetailsModal } from "./OrderDetailsModal";
 import { SaboyModal } from "./SaboyModal";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://server.kepket.uz";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://server-v2.kepket.uz";
 
 export function Dashboard() {
   const { user, restaurant } = useAuth();
@@ -166,10 +166,12 @@ export function Dashboard() {
 
       // Update local state
       setOrders((prev) => prev.map((o) => (o._id === orderId ? paidOrder : o)));
-      loadData();
+      await loadData();
     } catch (error) {
       console.error("To'lov xatosi:", error);
-      alert("To'lov amalga oshirilmadi");
+      const errorMessage = error instanceof Error ? error.message : "To'lov amalga oshirilmadi";
+      alert(errorMessage);
+      throw error; // Re-throw so modal doesn't close
     }
   };
 

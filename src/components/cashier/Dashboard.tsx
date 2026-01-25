@@ -13,6 +13,7 @@ import { PaymentModal } from "./PaymentModal";
 import { SettingsModal } from "./SettingsModal";
 import { ReportsModal } from "./ReportsModal";
 import { OrderDetailsModal } from "./OrderDetailsModal";
+import { SaboyModal } from "./SaboyModal";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://server.kepket.uz";
 
@@ -38,6 +39,7 @@ export function Dashboard() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isReportsOpen, setIsReportsOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isSaboyOpen, setIsSaboyOpen] = useState(false);
 
   // Audio for notifications
   const [audio] = useState(() => {
@@ -261,6 +263,7 @@ export function Dashboard() {
         isConnected={isConnected}
         onSettingsClick={() => setIsSettingsOpen(true)}
         onReportsClick={() => setIsReportsOpen(true)}
+        onSaboyClick={() => setIsSaboyOpen(true)}
       />
 
       <SummaryCards summary={summary} />
@@ -302,6 +305,12 @@ export function Dashboard() {
           setDetailsOrder(null);
         }}
         onPayClick={handlePayClick}
+      />
+
+      <SaboyModal
+        isOpen={isSaboyOpen}
+        onClose={() => setIsSaboyOpen(false)}
+        onSuccess={loadData}
       />
     </div>
   );

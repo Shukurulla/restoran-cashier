@@ -2,16 +2,17 @@
 
 import { useAuth } from '@/context/AuthContext';
 import { DailySummary } from '@/types';
-import { BiCog, BiPrinter, BiUser, BiLogOut, BiRefresh } from 'react-icons/bi';
+import { BiCog, BiPrinter, BiUser, BiLogOut, BiRefresh, BiPackage } from 'react-icons/bi';
 
 interface HeaderProps {
   summary: DailySummary;
   isConnected: boolean;
   onSettingsClick: () => void;
   onReportsClick: () => void;
+  onSaboyClick: () => void;
 }
 
-export function Header({ summary, isConnected, onSettingsClick, onReportsClick }: HeaderProps) {
+export function Header({ summary, isConnected, onSettingsClick, onReportsClick, onSaboyClick }: HeaderProps) {
   const { user, restaurant, logout } = useAuth();
 
   return (
@@ -46,6 +47,14 @@ export function Header({ summary, isConnected, onSettingsClick, onReportsClick }
           <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-[#22c55e] shadow-[0_0_8px_#22c55e]' : 'bg-[#ef4444]'}`} />
           <span>{isConnected ? 'Ulangan' : 'Ulanmagan'}</span>
         </div>
+
+        <button
+          onClick={onSaboyClick}
+          className="flex items-center gap-2 px-4 py-2 bg-[#f97316]/10 border border-[#f97316]/30 rounded-lg text-[#f97316] text-sm font-medium hover:bg-[#f97316]/20 hover:border-[#f97316] transition-colors"
+        >
+          <BiPackage className="text-lg" />
+          Saboy
+        </button>
 
         <button
           onClick={() => window.location.reload()}

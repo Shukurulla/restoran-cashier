@@ -30,9 +30,13 @@ export interface PaymentSplit {
   click: number;
 }
 
+export type OrderType = 'dine-in' | 'saboy';
+
 export interface Order {
   _id: string;
   orderNumber: number;
+  orderType?: OrderType;
+  saboyNumber?: number;
   tableNumber: number;
   tableName: string;
   items: OrderItem[];
@@ -50,6 +54,15 @@ export interface Order {
   };
   createdAt: string;
   paidAt?: string;
+}
+
+// Saboy uchun taom ma'lumotlari
+export interface SaboyItem {
+  _id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  category?: string;
 }
 
 export interface DailySummary {

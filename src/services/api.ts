@@ -1,4 +1,4 @@
-import { User, Restaurant, Order, DailySummary, PaymentType, PaymentSplit } from "@/types";
+import { User, Restaurant, Order, DailySummary, PaymentType, PaymentSplit, SaboyItem } from "@/types";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "https://server.kepket.uz";
@@ -208,6 +208,72 @@ class ApiService {
     if (typeof window === "undefined") return null;
     const restaurantStr = localStorage.getItem("restaurant");
     return restaurantStr ? JSON.parse(restaurantStr) : null;
+  }
+
+  // Saboy order yaratish - to'g'ridan-to'g'ri to'langan
+  async createSaboyOrder(
+    items: SaboyItem[],
+    paymentType: PaymentType,
+    paymentSplit?: PaymentSplit,
+    comment?: string,
+  ): Promise<{ success: boolean; saboyNumber: number; grandTotal: number }> {
+    const restaurant = this.getStoredRestaurant();
+    if (!restaurant) {
+      throw new Error("Restoran topilmadi");
+    }
+
+    const data = await this.request<{
+      success: boolean;
+      saboyNumber: number;
+      grandTotal: number;
+    }>("/api/orders/saboy", {
+      method: "POST",
+      body: JSON.stringify({
+        restaurantId: restaurant._id,
+        items: items.map(item => ({
+          _id: item._id,
+          name: item.name,
+          foodName: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          category: item.category,
+        })),
+        paymentType,
+        paymentSplit,
+        comment,
+      }),
+    });
+
+    return data;
+  }
+
+  // Menu (taomlar) ro'yxatini olish
+  async getMenuItems(): Promise<{ _id: string; name: string; price: number; category: string; categoryName?: string }[]> {
+    const restaurant = this.getStoredRestaurant();
+    if (!restaurant) return [];
+
+    const data = await this.request<{ data: { _id: string; foodName: string; price: number; category: string }[] }>(
+      `/foods?restaurantId=${restaurant._id}`
+    );
+
+    return (data.data || []).map(item => ({
+      _id: item._id,
+      name: item.foodName,
+      price: item.price,
+      category: item.category,
+    }));
+  }
+
+  // Kategoriyalar ro'yxatini olish
+  async getCategories(): Promise<{ _id: string; title: string }[]> {
+    const restaurant = this.getStoredRestaurant();
+    if (!restaurant) return [];
+
+    const data = await this.request<{ data: { _id: string; title: string }[] }>(
+      `/category?restaurantId=${restaurant._id}`
+    );
+
+    return data.data || [];
   }
 }
 

@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { BiPackage, BiMoney, BiCreditCard, BiPlus, BiMinus, BiCheck, BiX, BiSearch } from 'react-icons/bi';
 import { SiKlarna } from 'react-icons/si';
 import { api } from '@/services/api';
-import { toast } from 'sonner';
 
 interface SaboyModalProps {
   isOpen: boolean;
@@ -64,14 +63,14 @@ export function SaboyModal({ isOpen, onClose, onSuccess }: SaboyModalProps) {
       setCategories(cats);
     } catch (error) {
       console.error('Menu yuklashda xatolik:', error);
-      toast.error('Menu yuklashda xatolik');
+      alert('Menu yuklashda xatolik');
     } finally {
       setIsLoadingMenu(false);
     }
   };
 
   // Taom qo'shish/o'chirish
-  const addItem = (item: MenuItem) => {
+  const addItem = (item: MenuItem | SaboyItem) => {
     setSelectedItems(prev => {
       const existing = prev.find(i => i._id === item._id);
       if (existing) {
@@ -79,7 +78,7 @@ export function SaboyModal({ isOpen, onClose, onSuccess }: SaboyModalProps) {
           i._id === item._id ? { ...i, quantity: i.quantity + 1 } : i
         );
       }
-      return [...prev, { ...item, quantity: 1, category: item.category }];
+      return [...prev, { ...item, quantity: 'quantity' in item ? item.quantity : 1, category: item.category }];
     });
   };
 
@@ -112,19 +111,19 @@ export function SaboyModal({ isOpen, onClose, onSuccess }: SaboyModalProps) {
   // Saboy order yaratish
   const handleSubmit = async () => {
     if (selectedItems.length === 0) {
-      toast.error('Mahsulot tanlanmagan');
+      alert('Mahsulot tanlanmagan');
       return;
     }
 
     setIsLoading(true);
     try {
       const result = await api.createSaboyOrder(selectedItems, paymentType);
-      toast.success(`Saboy #${result.saboyNumber} yaratildi - ${formatMoney(result.grandTotal)}`);
+      alert(`Saboy #${result.saboyNumber} yaratildi - ${formatMoney(result.grandTotal)}`);
       onSuccess();
       onClose();
     } catch (error) {
       console.error('Saboy yaratishda xatolik:', error);
-      toast.error('Saboy yaratishda xatolik');
+      alert('Saboy yaratishda xatolik');
     } finally {
       setIsLoading(false);
     }

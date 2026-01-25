@@ -130,6 +130,16 @@ export function Dashboard() {
       loadData();
     });
 
+    // Order o'chirilganda (admin panel tomonidan)
+    newSocket.on("order_deleted", () => {
+      loadData();
+    });
+
+    // Order item o'chirilganda (admin panel tomonidan)
+    newSocket.on("order_item_deleted", () => {
+      loadData();
+    });
+
     setSocket(newSocket);
 
     return () => {

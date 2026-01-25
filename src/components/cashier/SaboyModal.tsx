@@ -55,10 +55,18 @@ export function SaboyModal({ isOpen, onClose, onSuccess }: SaboyModalProps) {
   const loadMenuData = async () => {
     setIsLoadingMenu(true);
     try {
+      // Debug: Check restaurant data
+      const storedRestaurant = localStorage.getItem('restaurant');
+      console.log('Stored restaurant:', storedRestaurant);
+
       const [items, cats] = await Promise.all([
         api.getMenuItems(),
         api.getCategories(),
       ]);
+
+      console.log('Menu items loaded:', items.length);
+      console.log('Categories loaded:', cats.length);
+
       setMenuItems(items);
       setCategories(cats);
     } catch (error) {

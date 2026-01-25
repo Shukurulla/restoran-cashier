@@ -63,7 +63,8 @@ class ApiService {
     const data = await this.request<{
       staff: User;
       token: string;
-      restaurant: Restaurant;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      restaurant: any;
     }>("/api/staff/login", {
       method: "POST",
       body: JSON.stringify({ phone, password }),
@@ -71,12 +72,18 @@ class ApiService {
 
     this.setToken(data.token);
 
+    // Normalize restaurant data - handle both 'id' and '_id' cases
+    const restaurant: Restaurant = {
+      _id: data.restaurant?._id || data.restaurant?.id || '',
+      name: data.restaurant?.name || '',
+    };
+
     if (typeof window !== "undefined") {
       localStorage.setItem("user", JSON.stringify(data.staff));
-      localStorage.setItem("restaurant", JSON.stringify(data.restaurant));
+      localStorage.setItem("restaurant", JSON.stringify(restaurant));
     }
 
-    return { user: data.staff, token: data.token, restaurant: data.restaurant };
+    return { user: data.staff, token: data.token, restaurant };
   }
 
   async getOrders(): Promise<Order[]> {
@@ -207,7 +214,18 @@ class ApiService {
   getStoredRestaurant(): Restaurant | null {
     if (typeof window === "undefined") return null;
     const restaurantStr = localStorage.getItem("restaurant");
-    return restaurantStr ? JSON.parse(restaurantStr) : null;
+    if (!restaurantStr) return null;
+
+    try {
+      const parsed = JSON.parse(restaurantStr);
+      // Handle both 'id' and '_id' cases
+      return {
+        _id: parsed._id || parsed.id || '',
+        name: parsed.name || '',
+      };
+    } catch {
+      return null;
+    }
   }
 
   // Saboy order yaratish - to'g'ridan-to'g'ri to'langan
@@ -250,7 +268,11 @@ class ApiService {
   // Menu (taomlar) ro'yxatini olish
   async getMenuItems(): Promise<{ _id: string; name: string; price: number; category: string; categoryName?: string }[]> {
     const restaurant = this.getStoredRestaurant();
-    if (!restaurant || !restaurant._id) return [];
+    console.log('getMenuItems - restaurant:', restaurant);
+    if (!restaurant || !restaurant._id) {
+      console.warn('getMenuItems - restaurant or _id is missing, returning empty array');
+      return [];
+    }
 
     const data = await this.request<{ data: { _id: string; foodName: string; price: number; category: string }[] }>(
       `/foods?restaurantId=${restaurant._id}`
@@ -267,7 +289,11 @@ class ApiService {
   // Kategoriyalar ro'yxatini olish
   async getCategories(): Promise<{ _id: string; title: string }[]> {
     const restaurant = this.getStoredRestaurant();
-    if (!restaurant || !restaurant._id) return [];
+    console.log('getCategories - restaurant:', restaurant);
+    if (!restaurant || !restaurant._id) {
+      console.warn('getCategories - restaurant or _id is missing, returning empty array');
+      return [];
+    }
 
     const data = await this.request<{ data: { _id: string; title: string }[] }>(
       `/category?restaurantId=${restaurant._id}`

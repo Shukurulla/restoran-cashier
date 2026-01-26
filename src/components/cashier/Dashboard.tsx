@@ -250,6 +250,7 @@ export function Dashboard() {
         onPayClick={handlePayClick}
         onDetailsClick={handleDetailsClick}
         onPrintClick={handlePrintClick}
+        onMergeSuccess={loadData}
       />
 
       {/* Modals */}

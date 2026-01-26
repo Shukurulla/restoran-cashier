@@ -9,6 +9,11 @@ interface OrderCardProps {
   onPayClick: (order: Order) => void;
   onDetailsClick: (order: Order) => void;
   onPrintClick?: (order: Order) => void;
+  // Merge mode props
+  isMergeMode?: boolean;
+  isSelected?: boolean;
+  selectionIndex?: number;
+  onToggleSelect?: () => void;
 }
 
 const formatMoney = (amount: number) => {
@@ -79,7 +84,16 @@ const getStatusBadge = (order: Order) => {
   return { text: 'KUTILMOQDA', className: 'bg-[#71717a]/15 text-[#71717a]' };
 };
 
-export function OrderCard({ order, onPayClick, onDetailsClick, onPrintClick }: OrderCardProps) {
+export function OrderCard({
+  order,
+  onPayClick,
+  onDetailsClick,
+  onPrintClick,
+  isMergeMode = false,
+  isSelected = false,
+  selectionIndex = -1,
+  onToggleSelect,
+}: OrderCardProps) {
   const status = getStatusBadge(order);
   const activeItems = order.items.filter(item => item.status !== 'cancelled');
   const displayItems = activeItems.slice(0, 3);
@@ -93,15 +107,49 @@ export function OrderCard({ order, onPayClick, onDetailsClick, onPrintClick }: O
   const readyCount = activeItems.filter(i => i.status === 'ready').length;
   const servedCount = activeItems.filter(i => i.status === 'served').length;
 
+  // To'langan orderlarni merge qilib bo'lmaydi
+  const canBeMerged = order.paymentStatus !== 'paid';
+
+  const handleCardClick = () => {
+    if (isMergeMode && canBeMerged) {
+      onToggleSelect?.();
+    } else if (!isMergeMode) {
+      onDetailsClick(order);
+    }
+  };
+
   return (
     <div
-      className="bg-secondary rounded-xl border border-border overflow-hidden hover:border-[#404040] hover:-translate-y-0.5 transition-all cursor-pointer"
-      onClick={() => onDetailsClick(order)}
+      className={`bg-secondary rounded-xl border overflow-hidden transition-all cursor-pointer relative
+        ${isMergeMode
+          ? isSelected
+            ? 'border-[#a855f7] border-2 shadow-[0_0_20px_rgba(168,85,247,0.3)]'
+            : canBeMerged
+              ? 'border-dashed border-2 border-[#a855f7]/50 hover:border-[#a855f7]'
+              : 'border-border opacity-50 cursor-not-allowed'
+          : 'border-border hover:border-[#404040] hover:-translate-y-0.5'
+        }`}
+      onClick={handleCardClick}
     >
+      {/* Selection indicator */}
+      {isMergeMode && isSelected && (
+        <div className="absolute top-3 right-3 z-10 w-8 h-8 bg-[#a855f7] rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
+          {selectionIndex === 0 ? '★' : selectionIndex + 1}
+        </div>
+      )}
+
+      {/* First selected badge */}
+      {isMergeMode && isSelected && selectionIndex === 0 && (
+        <div className="absolute top-0 left-0 right-0 bg-[#a855f7] text-white text-xs font-semibold py-1 px-3 text-center">
+          ASOSIY BUYURTMA
+        </div>
+      )}
+
       {/* Header */}
-      <div className="px-5 py-4 flex justify-between items-center border-b border-border">
+      <div className={`px-5 py-4 flex justify-between items-center border-b border-border ${isMergeMode && isSelected && selectionIndex === 0 ? 'pt-8' : ''}`}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#262626] rounded-lg flex items-center justify-center text-[#3b82f6] text-lg">
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg
+            ${isMergeMode && isSelected ? 'bg-[#a855f7]/20 text-[#a855f7]' : 'bg-[#262626] text-[#3b82f6]'}`}>
             <BiTable />
           </div>
           <div>
@@ -114,13 +162,15 @@ export function OrderCard({ order, onPayClick, onDetailsClick, onPrintClick }: O
             </div>
           </div>
         </div>
-        <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide ${status.className}`}>
-          {status.text}
-        </span>
+        {!isMergeMode && (
+          <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide ${status.className}`}>
+            {status.text}
+          </span>
+        )}
       </div>
 
       {/* Status Progress Bar */}
-      {order.paymentStatus !== 'paid' && activeItems.length > 0 && (
+      {order.paymentStatus !== 'paid' && activeItems.length > 0 && !isMergeMode && (
         <div className="px-5 py-2 bg-[#1a1a1a] flex gap-1 text-[10px]">
           {pendingCount > 0 && (
             <div className="flex items-center gap-1 px-2 py-1 rounded bg-[#71717a]/10 text-[#71717a]">
@@ -166,7 +216,7 @@ export function OrderCard({ order, onPayClick, onDetailsClick, onPrintClick }: O
                     {item.quantity}x
                   </span>
                   <span className={itemStatus.className}>{item.name}</span>
-                  <StatusIcon className={`${itemStatus.className} text-sm`} />
+                  {!isMergeMode && <StatusIcon className={`${itemStatus.className} text-sm`} />}
                 </div>
                 <span className="text-sm text-muted-foreground tabular-nums">
                   {formatMoney(item.price * item.quantity)}
@@ -195,37 +245,48 @@ export function OrderCard({ order, onPayClick, onDetailsClick, onPrintClick }: O
           )}
           <div className="flex justify-between pt-2 border-t border-border">
             <span className="text-sm font-semibold">Jami:</span>
-            <span className="text-lg font-bold text-[#22c55e] tabular-nums">{formatMoney(order.grandTotal)}</span>
+            <span className={`text-lg font-bold tabular-nums ${isMergeMode && isSelected ? 'text-[#a855f7]' : 'text-[#22c55e]'}`}>
+              {formatMoney(order.grandTotal)}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="px-5 py-3 bg-secondary flex gap-2">
-        {onPrintClick && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onPrintClick(order);
-            }}
-            className="py-2.5 px-4 bg-[#262626] border border-border rounded-lg text-muted-foreground text-sm font-semibold hover:bg-[#303030] hover:text-foreground transition-colors flex items-center gap-2"
-          >
-            <BiPrinter className="text-lg" />
-            Chek
-          </button>
-        )}
-        {order.paymentStatus !== 'paid' && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onPayClick(order);
-            }}
-            className="flex-1 py-2.5 px-4 bg-[#22c55e] rounded-lg text-white text-sm font-semibold hover:opacity-90 transition-opacity"
-          >
-            To&apos;lov qabul qilish
-          </button>
-        )}
-      </div>
+      {/* Actions - faqat merge mode bo'lmaganda */}
+      {!isMergeMode && (
+        <div className="px-5 py-3 bg-secondary flex gap-2">
+          {onPrintClick && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onPrintClick(order);
+              }}
+              className="py-2.5 px-4 bg-[#262626] border border-border rounded-lg text-muted-foreground text-sm font-semibold hover:bg-[#303030] hover:text-foreground transition-colors flex items-center gap-2"
+            >
+              <BiPrinter className="text-lg" />
+              Chek
+            </button>
+          )}
+          {order.paymentStatus !== 'paid' && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onPayClick(order);
+              }}
+              className="flex-1 py-2.5 px-4 bg-[#22c55e] rounded-lg text-white text-sm font-semibold hover:opacity-90 transition-opacity"
+            >
+              To&apos;lov qabul qilish
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Merge mode selection hint */}
+      {isMergeMode && canBeMerged && !isSelected && (
+        <div className="px-5 py-3 bg-[#a855f7]/5 text-center">
+          <span className="text-xs text-[#a855f7]">Tanlash uchun bosing</span>
+        </div>
+      )}
     </div>
   );
 }

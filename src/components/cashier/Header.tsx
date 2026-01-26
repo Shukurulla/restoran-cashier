@@ -1,18 +1,19 @@
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
-import { DailySummary } from '@/types';
-import { BiCog, BiPrinter, BiUser, BiRefresh, BiPackage } from 'react-icons/bi';
+import { DailySummary, Shift } from '@/types';
+import { BiCog, BiPrinter, BiUser, BiRefresh, BiPackage, BiTime } from 'react-icons/bi';
 
 interface HeaderProps {
   summary: DailySummary;
   isConnected: boolean;
+  activeShift: Shift | null;
   onSettingsClick: () => void;
   onReportsClick: () => void;
   onSaboyClick: () => void;
 }
 
-export function Header({ summary, isConnected, onSettingsClick, onReportsClick, onSaboyClick }: HeaderProps) {
+export function Header({ summary, isConnected, activeShift, onSettingsClick, onReportsClick, onSaboyClick }: HeaderProps) {
   const { user, restaurant } = useAuth();
 
   return (
@@ -43,6 +44,19 @@ export function Header({ summary, isConnected, onSettingsClick, onReportsClick, 
       </div>
 
       <div className="flex items-center gap-4">
+        {/* Shift status */}
+        {activeShift ? (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium bg-[#22c55e]/10 border border-[#22c55e]/30 text-[#22c55e]">
+            <BiTime className="text-lg" />
+            <span>Smena #{activeShift.shiftNumber}</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium bg-[#ef4444]/10 border border-[#ef4444]/30 text-[#ef4444]">
+            <BiTime className="text-lg" />
+            <span>Smena ochilmagan</span>
+          </div>
+        )}
+
         <div className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium bg-secondary border border-border ${isConnected ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
           <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-[#22c55e] shadow-[0_0_8px_#22c55e]' : 'bg-[#ef4444]'}`} />
           <span>{isConnected ? 'Ulangan' : 'Ulanmagan'}</span>
@@ -50,7 +64,13 @@ export function Header({ summary, isConnected, onSettingsClick, onReportsClick, 
 
         <button
           onClick={onSaboyClick}
-          className="flex items-center gap-2 px-4 py-2 bg-[#f97316]/10 border border-[#f97316]/30 rounded-lg text-[#f97316] text-sm font-medium hover:bg-[#f97316]/20 hover:border-[#f97316] transition-colors"
+          disabled={!activeShift}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            activeShift
+              ? 'bg-[#f97316]/10 border border-[#f97316]/30 text-[#f97316] hover:bg-[#f97316]/20 hover:border-[#f97316]'
+              : 'bg-secondary border border-border text-muted-foreground cursor-not-allowed opacity-50'
+          }`}
+          title={!activeShift ? 'Smena ochilmagan' : undefined}
         >
           <BiPackage className="text-lg" />
           Saboy

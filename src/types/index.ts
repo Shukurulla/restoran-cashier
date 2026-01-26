@@ -134,3 +134,49 @@ export interface PaymentData {
 }
 
 export type FilterType = 'active' | 'paid' | 'all';
+
+// Shift (Smena) types
+export interface Shift {
+  _id: string;
+  restaurantId: string;
+  shiftNumber: number;
+  status: 'active' | 'closed';
+  openedAt: string;
+  closedAt?: string;
+  openedBy: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+  };
+  closedBy?: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+  };
+  openingCash: number;
+  closingCash?: number;
+  expectedClosingCash?: number;
+  cashDifference?: number;
+  stats?: ShiftStats;
+  openingNotes?: string;
+  closingNotes?: string;
+  duration?: number;
+  durationFormatted?: string;
+}
+
+export interface ShiftStats {
+  totalOrders: number;
+  paidOrders: number;
+  cancelledOrders: number;
+  totalRevenue: number;
+  foodRevenue: number;
+  serviceRevenue: number;
+  cashPayments: number;
+  cardPayments: number;
+  clickPayments: number;
+  mixedPayments: number;
+  averageOrderValue: number;
+  totalItemsSold: number;
+  totalCancelledItems: number;
+  cancelledItemsValue: number;
+}

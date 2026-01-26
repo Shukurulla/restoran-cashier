@@ -5,7 +5,7 @@ import { io, Socket } from "socket.io-client";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/services/api";
 import { PrinterAPI } from "@/services/printer";
-import { Order, DailySummary, PaymentType, PaymentSplit, PartialPaymentResult } from "@/types";
+import { Order, DailySummary, PaymentType, PaymentSplit, PartialPaymentResult, Shift } from "@/types";
 import { Header } from "./Header";
 import { SummaryCards } from "./SummaryCards";
 import { OrdersSection } from "./OrdersSection";
@@ -32,6 +32,7 @@ export function Dashboard() {
   });
   const [isConnected, setIsConnected] = useState(false);
   const [socket, setSocket] = useState<Socket | null>(null);
+  const [activeShift, setActiveShift] = useState<Shift | null>(null);
 
   // Modal states
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -56,12 +57,14 @@ export function Dashboard() {
 
   const loadData = useCallback(async () => {
     try {
-      const [ordersData, summaryData] = await Promise.all([
+      const [ordersData, summaryData, shiftData] = await Promise.all([
         api.getOrders(),
         api.getDailySummary(),
+        api.getActiveShift(),
       ]);
       setOrders(ordersData);
       setSummary(summaryData);
+      setActiveShift(shiftData);
     } catch (error) {
       console.error("Failed to load data:", error);
     }
@@ -141,6 +144,26 @@ export function Dashboard() {
     // Order item o'chirilganda (admin panel tomonidan)
     newSocket.on("order_item_deleted", () => {
       loadData();
+    });
+
+    // Shift events (smena)
+    newSocket.on("shift:opened", (data) => {
+      console.log("Smena ochildi:", data);
+      setActiveShift(data.shift);
+      loadData();
+    });
+
+    newSocket.on("shift:closed", (data) => {
+      console.log("Smena yopildi:", data);
+      setActiveShift(null);
+      loadData();
+    });
+
+    newSocket.on("shift:updated", (data) => {
+      console.log("Smena yangilandi:", data);
+      if (data.shift) {
+        setActiveShift(data.shift);
+      }
     });
 
     setSocket(newSocket);
@@ -275,6 +298,7 @@ export function Dashboard() {
       <Header
         summary={summary}
         isConnected={isConnected}
+        activeShift={activeShift}
         onSettingsClick={() => setIsSettingsOpen(true)}
         onReportsClick={() => setIsReportsOpen(true)}
         onSaboyClick={() => setIsSaboyOpen(true)}

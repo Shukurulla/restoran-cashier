@@ -1,4 +1,4 @@
-import { User, Restaurant, Order, DailySummary, PaymentType, PaymentSplit, SaboyItem, PartialPaymentResult, OrderItem } from "@/types";
+import { User, Restaurant, Order, DailySummary, PaymentType, PaymentSplit, SaboyItem, PartialPaymentResult, OrderItem, Shift } from "@/types";
 
 // Yangi backend v2 URL
 const API_BASE_URL =
@@ -552,6 +552,13 @@ class ApiService {
       message: data.message || 'Buyurtmalar biriktirildi',
       mergedOrderIds: data.data?.mergedOrderIds || [],
     };
+  }
+
+  // ========== SHIFT (SMENA) ==========
+  async getActiveShift(): Promise<Shift | null> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await this.request<any>('/api/shifts/active');
+    return data.data || null;
   }
 }
 

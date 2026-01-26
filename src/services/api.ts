@@ -367,6 +367,27 @@ class ApiService {
       title: cat.name || cat.title || '',
     }));
   }
+
+  // ========== MERGE ORDERS ==========
+  async mergeOrders(
+    targetOrderId: string,
+    sourceOrderIds: string[],
+  ): Promise<{ success: boolean; message: string; mergedOrderIds: string[] }> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await this.request<any>('/api/orders/merge', {
+      method: 'POST',
+      body: JSON.stringify({
+        targetOrderId,
+        sourceOrderIds,
+      }),
+    });
+
+    return {
+      success: data.success,
+      message: data.message || 'Buyurtmalar biriktirildi',
+      mergedOrderIds: data.data?.mergedOrderIds || [],
+    };
+  }
 }
 
 export const api = new ApiService();

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Order, FilterType } from '@/types';
 import { OrderCard } from './OrderCard';
-import { BiListUl, BiArchive, BiGitMerge, BiX, BiCheck, BiLoader } from 'react-icons/bi';
+import { BiListUl, BiArchive, BiGitMerge, BiX, BiCheck, BiLoader, BiSearch } from 'react-icons/bi';
 import { api } from '@/services/api';
 
 interface OrdersSectionProps {
@@ -16,6 +16,7 @@ interface OrdersSectionProps {
 
 export function OrdersSection({ orders, onPayClick, onDetailsClick, onPrintClick, onMergeSuccess }: OrdersSectionProps) {
   const [filter, setFilter] = useState<FilterType>('active');
+  const [searchQuery, setSearchQuery] = useState('');
   const [isMergeMode, setIsMergeMode] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [isMerging, setIsMerging] = useState(false);
@@ -23,11 +24,30 @@ export function OrdersSection({ orders, onPayClick, onDetailsClick, onPrintClick
   const activeOrders = orders.filter(o => o.paymentStatus !== 'paid');
   const paidOrders = orders.filter(o => o.paymentStatus === 'paid');
 
-  const filteredOrders = filter === 'active'
+  // Avval status bo'yicha filter
+  const statusFilteredOrders = filter === 'active'
     ? activeOrders
     : filter === 'paid'
       ? paidOrders
       : orders;
+
+  // Keyin search bo'yicha filter
+  const filteredOrders = searchQuery.trim()
+    ? statusFilteredOrders.filter(order => {
+        const query = searchQuery.toLowerCase().trim();
+        // Stol nomi bo'yicha qidirish
+        if (order.tableName?.toLowerCase().includes(query)) return true;
+        // Stol raqami bo'yicha qidirish
+        if (order.tableNumber?.toString().includes(query)) return true;
+        // Buyurtma raqami bo'yicha qidirish
+        if (order.orderNumber?.toString().includes(query)) return true;
+        // Ofitsiant ismi bo'yicha qidirish
+        if (order.waiter?.name?.toLowerCase().includes(query)) return true;
+        // Taom nomlari bo'yicha qidirish
+        if (order.items?.some(item => item.name?.toLowerCase().includes(query))) return true;
+        return false;
+      })
+    : statusFilteredOrders;
 
   const filters = [
     { key: 'active' as FilterType, label: 'Tayyorlanmoqda', count: activeOrders.length },
@@ -100,6 +120,25 @@ export function OrdersSection({ orders, onPayClick, onDetailsClick, onPrintClick
         </h2>
 
         <div className="flex items-center gap-3">
+          {/* Search input */}
+          <div className="relative">
+            <BiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[#71717a] text-lg" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Stol, ofitsiant, taom..."
+              className="w-[220px] pl-10 pr-4 py-2 rounded-lg bg-secondary border border-border text-sm placeholder:text-[#71717a] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]/50 focus:border-[#3b82f6] transition-all"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-[#71717a] hover:text-foreground p-1"
+              >
+                <BiX className="text-lg" />
+              </button>
+            )}
+          </div>
           {/* Merge mode button */}
           {!isMergeMode ? (
             <button
@@ -189,14 +228,29 @@ export function OrdersSection({ orders, onPayClick, onDetailsClick, onPrintClick
         {filteredOrders.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="w-16 h-16 bg-secondary rounded-2xl flex items-center justify-center text-3xl text-[#71717a] mb-5">
-              <BiArchive />
+              {searchQuery ? <BiSearch /> : <BiArchive />}
             </div>
-            <h3 className="text-lg font-semibold mb-2">Buyurtmalar yo&apos;q</h3>
+            <h3 className="text-lg font-semibold mb-2">
+              {searchQuery ? 'Natija topilmadi' : 'Buyurtmalar yo\'q'}
+            </h3>
             <p className="text-[#71717a] text-sm">
-              {filter === 'active' && 'Hozirda faol buyurtmalar mavjud emas'}
-              {filter === 'paid' && 'Bugun to\'langan buyurtmalar yo\'q'}
-              {filter === 'all' && 'Buyurtmalar kelganda bu yerda ko\'rinadi'}
+              {searchQuery
+                ? `"${searchQuery}" bo'yicha hech narsa topilmadi`
+                : filter === 'active'
+                  ? 'Hozirda faol buyurtmalar mavjud emas'
+                  : filter === 'paid'
+                    ? 'Bugun to\'langan buyurtmalar yo\'q'
+                    : 'Buyurtmalar kelganda bu yerda ko\'rinadi'
+              }
             </p>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="mt-4 px-4 py-2 rounded-lg bg-[#3b82f6] text-white text-sm font-medium hover:bg-[#2563eb] transition-colors"
+              >
+                Qidiruvni tozalash
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-4">

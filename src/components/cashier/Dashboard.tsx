@@ -83,8 +83,10 @@ export function Dashboard() {
     newSocket.on("connect", () => {
       setIsConnected(true);
       // Cashier room ga qo'shilish
-      newSocket.emit("join-restaurant", user.restaurantId);
-      newSocket.emit("join_cashier", { restaurantId: user.restaurantId });
+      newSocket.emit("cashier_connect", {
+        cashierId: user._id,
+        restaurantId: user.restaurantId
+      });
     });
 
     newSocket.on("disconnect", () => {

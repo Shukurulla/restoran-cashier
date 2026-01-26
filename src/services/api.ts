@@ -117,10 +117,15 @@ class ApiService {
       const tableNumber = order.tableId?.number || order.tableNumber || 0;
       const tableName = order.tableId?.number ? `Stol ${order.tableId.number}` : (order.tableName || 'Noma\'lum stol');
 
+      // Order type - saboy yoki dine-in
+      const orderType = order.orderType || (order.isSaboy ? 'saboy' : undefined);
+      const isSaboy = orderType === 'saboy';
+
       // Agar backend summalarni qaytarmasa, frontendda hisoblaymiz
       const subtotal = order.subtotal || items.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0);
-      const serviceChargePercent = order.serviceChargePercent || 10;
-      const serviceCharge = order.serviceCharge || Math.round(subtotal * (serviceChargePercent / 100));
+      // Saboy uchun xizmat haqqi yo'q
+      const serviceChargePercent = isSaboy ? 0 : (order.serviceChargePercent || 10);
+      const serviceCharge = isSaboy ? 0 : (order.serviceCharge || Math.round(subtotal * (serviceChargePercent / 100)));
       const grandTotal = order.grandTotal || (subtotal + serviceCharge);
 
       // To'lov statusi: isPaid yoki status === 'paid'
@@ -129,8 +134,10 @@ class ApiService {
       return {
         _id: order._id,
         orderNumber: order.orderNumber || index + 1,
+        orderType: orderType,
+        saboyNumber: order.saboyNumber || order.orderNumber,
         tableNumber,
-        tableName,
+        tableName: isSaboy ? 'Soboy' : tableName,
         items,
         status: isPaid ? 'paid' : 'active',
         paymentStatus: isPaid ? 'paid' : 'pending',
@@ -213,17 +220,27 @@ class ApiService {
       status: 'ready',
     }));
 
+    // Order type - saboy yoki dine-in
+    const orderType = order.orderType || (order.isSaboy ? 'saboy' : undefined);
+    const isSaboy = orderType === 'saboy';
+
     // Agar backend summalarni qaytarmasa, frontendda hisoblaymiz
     const subtotal = order.subtotal || items.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0);
-    const serviceChargePercent = order.serviceChargePercent || 10;
-    const serviceCharge = order.serviceCharge || Math.round(subtotal * (serviceChargePercent / 100));
+    // Saboy uchun xizmat haqqi yo'q
+    const serviceChargePercent = isSaboy ? 0 : (order.serviceChargePercent || 10);
+    const serviceCharge = isSaboy ? 0 : (order.serviceCharge || Math.round(subtotal * (serviceChargePercent / 100)));
     const grandTotal = order.grandTotal || (subtotal + serviceCharge);
+
+    const tableNumber = order.tableId?.number || 0;
+    const tableName = isSaboy ? 'Soboy' : `Stol ${tableNumber}`;
 
     return {
       _id: order._id,
       orderNumber: order.orderNumber || 1,
-      tableNumber: order.tableId?.number || 0,
-      tableName: `Stol ${order.tableId?.number || 0}`,
+      orderType: orderType,
+      saboyNumber: order.saboyNumber || order.orderNumber,
+      tableNumber,
+      tableName,
       items,
       status: 'paid',
       paymentStatus: 'paid',

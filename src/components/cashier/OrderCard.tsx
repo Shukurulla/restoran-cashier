@@ -52,6 +52,13 @@ const getItemStatusBadge = (status: OrderItem['status']) => {
         className: 'text-[#3b82f6]',
         bgClass: 'bg-[#3b82f6]/10',
       };
+    case 'cancelled':
+      return {
+        icon: BiTime,
+        text: 'Bekor qilindi',
+        className: 'text-[#ef4444]',
+        bgClass: 'bg-[#ef4444]/10',
+      };
     default:
       return {
         icon: BiTime,
@@ -64,6 +71,11 @@ const getItemStatusBadge = (status: OrderItem['status']) => {
 
 // Order status uchun badge
 const getStatusBadge = (order: Order) => {
+  // Bekor qilingan order
+  if (order.status === 'cancelled') {
+    return { text: 'BEKOR QILINDI', className: 'bg-[#ef4444]/20 text-[#ef4444]' };
+  }
+
   if (order.paymentStatus === 'paid') {
     return { text: 'TO\'LANGAN', className: 'bg-[#22c55e]/20 text-[#22c55e]' };
   }
@@ -97,16 +109,18 @@ export function OrderCard({
   onToggleSelect,
 }: OrderCardProps) {
   const status = getStatusBadge(order);
-  // isDeleted va cancelled itemlarni chiqarish
-  const activeItems = order.items.filter(item => !item.isDeleted && item.status !== 'cancelled');
+  // isDeleted itemlarni chiqarish, cancelled itemlarni ko'rsatamiz (usti chizilgan holda)
+  const allItems = order.items.filter(item => !item.isDeleted);
+  const activeItems = allItems.filter(item => item.status !== 'cancelled');
+  const cancelledItems = allItems.filter(item => item.status === 'cancelled');
 
-  // To'langan va to'lanmagan itemlarni ajratish
+  // To'langan va to'lanmagan itemlarni ajratish (faqat active itemlardan)
   const paidItems = activeItems.filter(item => item.isPaid);
   const unpaidItems = activeItems.filter(item => !item.isPaid);
 
-  // Display uchun - avval unpaid, keyin paid
-  const displayItems = [...unpaidItems, ...paidItems].slice(0, 3);
-  const remainingCount = activeItems.length - 3;
+  // Display uchun - avval unpaid, keyin paid, oxirida cancelled
+  const displayItems = [...unpaidItems, ...paidItems, ...cancelledItems].slice(0, 4);
+  const remainingCount = allItems.length - 4;
 
   // To'lanmagan itemlar summasi
   const unpaidSubtotal = unpaidItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -187,7 +201,7 @@ export function OrderCard({
       </div>
 
       {/* Status Progress Bar */}
-      {order.paymentStatus !== 'paid' && activeItems.length > 0 && !isMergeMode && (
+      {order.paymentStatus !== 'paid' && order.status !== 'cancelled' && activeItems.length > 0 && !isMergeMode && (
         <div className="px-5 py-2 bg-[#1a1a1a] flex gap-1 text-[10px]">
           {pendingCount > 0 && (
             <div className="flex items-center gap-1 px-2 py-1 rounded bg-[#71717a]/10 text-[#71717a]">
@@ -229,24 +243,31 @@ export function OrderCard({
             const itemStatus = getItemStatusBadge(item.status);
             const StatusIcon = itemStatus.icon;
             const isPaidItem = item.isPaid;
+            const isCancelledItem = item.status === 'cancelled';
+            const isDisabled = isPaidItem || isCancelledItem;
 
             return (
               <div
                 key={item._id}
-                className={`flex justify-between items-center py-2 ${index > 0 ? 'border-t border-border' : ''} ${isPaidItem ? 'opacity-50' : ''}`}
+                className={`flex justify-between items-center py-2 ${index > 0 ? 'border-t border-border' : ''} ${isDisabled ? 'opacity-50' : ''}`}
               >
                 <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-                  <span className={`px-2.5 py-1 rounded-md text-xs font-semibold min-w-[32px] text-center tabular-nums ${isPaidItem ? 'bg-[#22c55e]/20 text-[#22c55e]' : 'bg-[#262626] text-foreground'}`}>
+                  <span className={`px-2.5 py-1 rounded-md text-xs font-semibold min-w-[32px] text-center tabular-nums ${
+                    isCancelledItem ? 'bg-[#ef4444]/20 text-[#ef4444]' :
+                    isPaidItem ? 'bg-[#22c55e]/20 text-[#22c55e]' : 'bg-[#262626] text-foreground'
+                  }`}>
                     {item.quantity}x
                   </span>
-                  <span className={isPaidItem ? 'line-through text-[#71717a]' : itemStatus.className}>{item.name}</span>
-                  {isPaidItem ? (
+                  <span className={isDisabled ? 'line-through text-[#71717a]' : itemStatus.className}>{item.name}</span>
+                  {isCancelledItem ? (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#ef4444]/20 text-[#ef4444] font-medium">BEKOR QILINDI</span>
+                  ) : isPaidItem ? (
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#22c55e]/20 text-[#22c55e] font-medium">TO'LANGAN</span>
                   ) : (
                     !isMergeMode && <StatusIcon className={`${itemStatus.className} text-sm`} />
                   )}
                 </div>
-                <span className={`text-sm tabular-nums ${isPaidItem ? 'line-through text-[#71717a]' : 'text-muted-foreground'}`}>
+                <span className={`text-sm tabular-nums ${isDisabled ? 'line-through text-[#71717a]' : 'text-muted-foreground'}`}>
                   {formatMoney(item.price * item.quantity)}
                 </span>
               </div>
@@ -303,7 +324,7 @@ export function OrderCard({
               Chek
             </button>
           )}
-          {order.paymentStatus !== 'paid' && onAddItemsClick && (
+          {order.paymentStatus !== 'paid' && order.status !== 'cancelled' && onAddItemsClick && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -314,7 +335,7 @@ export function OrderCard({
               <BiPlus className="text-lg" />
             </button>
           )}
-          {order.paymentStatus !== 'paid' && (
+          {order.paymentStatus !== 'paid' && order.status !== 'cancelled' && (
             <button
               onClick={(e) => {
                 e.stopPropagation();

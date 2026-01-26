@@ -148,6 +148,15 @@ export function Dashboard() {
       loadData();
     });
 
+    // Order bekor qilinganda (admin panel tomonidan)
+    newSocket.on("order_rejected", () => {
+      loadData();
+    });
+
+    newSocket.on("order_cancelled", () => {
+      loadData();
+    });
+
     // Shift events (smena)
     newSocket.on("shift:opened", (data) => {
       console.log("Smena ochildi:", data);

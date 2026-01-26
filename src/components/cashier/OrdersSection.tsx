@@ -22,15 +22,34 @@ export function OrdersSection({ orders, onPayClick, onDetailsClick, onPrintClick
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [isMerging, setIsMerging] = useState(false);
 
-  const activeOrders = orders.filter(o => o.paymentStatus !== 'paid');
+  // Barcha itemlari bekor qilingan orderlarni aniqlash
+  const hasActiveItems = (order: Order) => {
+    const items = order.items || [];
+    if (items.length === 0) return false;
+    // Kamida bitta active (bekor qilinmagan) item bo'lsa true
+    return items.some(item => item.status !== 'cancelled' && !item.isCancelled);
+  };
+
+  const activeOrders = orders.filter(o =>
+    o.paymentStatus !== 'paid' &&
+    o.status !== 'cancelled' &&
+    hasActiveItems(o) // Barcha itemlari cancelled bo'lsa, active emas
+  );
   const paidOrders = orders.filter(o => o.paymentStatus === 'paid');
+  // Cancelled orders: status cancelled YOKI barcha itemlar cancelled
+  const cancelledOrders = orders.filter(o =>
+    o.status === 'cancelled' ||
+    (o.paymentStatus !== 'paid' && !hasActiveItems(o))
+  );
 
   // Avval status bo'yicha filter
   const statusFilteredOrders = filter === 'active'
     ? activeOrders
     : filter === 'paid'
       ? paidOrders
-      : orders;
+      : filter === 'cancelled'
+        ? cancelledOrders
+        : orders;
 
   // Keyin search bo'yicha filter
   const filteredOrders = searchQuery.trim()
@@ -53,6 +72,7 @@ export function OrdersSection({ orders, onPayClick, onDetailsClick, onPrintClick
   const filters = [
     { key: 'active' as FilterType, label: 'Tayyorlanmoqda', count: activeOrders.length },
     { key: 'paid' as FilterType, label: 'To\'langan', count: paidOrders.length },
+    { key: 'cancelled' as FilterType, label: 'Bekor qilingan', count: cancelledOrders.length },
     { key: 'all' as FilterType, label: 'Barchasi', count: orders.length },
   ];
 
@@ -241,7 +261,9 @@ export function OrdersSection({ orders, onPayClick, onDetailsClick, onPrintClick
                   ? 'Hozirda faol buyurtmalar mavjud emas'
                   : filter === 'paid'
                     ? 'Bugun to\'langan buyurtmalar yo\'q'
-                    : 'Buyurtmalar kelganda bu yerda ko\'rinadi'
+                    : filter === 'cancelled'
+                      ? 'Bekor qilingan buyurtmalar yo\'q'
+                      : 'Buyurtmalar kelganda bu yerda ko\'rinadi'
               }
             </p>
             {searchQuery && (

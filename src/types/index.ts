@@ -18,7 +18,10 @@ export interface OrderItem {
   price: number;
   status: 'pending' | 'preparing' | 'ready' | 'served' | 'cancelled';
   readyAt?: string;
+  // Cancelled item fields
+  isCancelled?: boolean;
   cancelledAt?: string;
+  cancelledBy?: string;
   cancelReason?: string;
   // Soft delete
   isDeleted?: boolean;
@@ -133,7 +136,7 @@ export interface PaymentData {
   date: string;
 }
 
-export type FilterType = 'active' | 'paid' | 'all';
+export type FilterType = 'active' | 'paid' | 'cancelled' | 'all';
 
 // Shift (Smena) types
 export interface Shift {

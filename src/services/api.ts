@@ -2,7 +2,7 @@ import { User, Restaurant, Order, DailySummary, PaymentType, PaymentSplit, Saboy
 
 // Yangi backend v2 URL
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://server-v2.kepket.uz";
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3010";
 
 class ApiService {
   private token: string | null = null;
@@ -121,6 +121,11 @@ class ApiService {
           paidAt: item.paidAt,
           paymentSessionId: item.paymentSessionId,
           itemPaymentType: item.itemPaymentType,
+          // Cancelled item fields
+          isCancelled: item.status === 'cancelled',
+          cancelledAt: item.cancelledAt,
+          cancelledBy: item.cancelledBy,
+          cancelReason: item.cancelReason,
         }));
 
       const tableNumber = order.tableId?.number || order.tableNumber || 0;
@@ -131,7 +136,9 @@ class ApiService {
       const isSaboy = orderType === 'saboy';
 
       // Agar backend summalarni qaytarmasa, frontendda hisoblaymiz
-      const subtotal = order.subtotal || items.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0);
+      // Bekor qilingan itemlarni hisobga olmaymiz
+      const activeItems = items.filter((item: { status: string; isCancelled?: boolean }) => item.status !== 'cancelled' && !item.isCancelled);
+      const subtotal = order.subtotal || activeItems.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0);
       // Saboy uchun xizmat haqqi yo'q
       const serviceChargePercent = isSaboy ? 0 : (order.serviceChargePercent || 10);
       const serviceCharge = isSaboy ? 0 : (order.serviceCharge || Math.round(subtotal * (serviceChargePercent / 100)));
@@ -139,6 +146,8 @@ class ApiService {
 
       // To'lov statusi: isPaid yoki status === 'paid'
       const isPaid = order.isPaid === true || order.status === 'paid';
+      // Bekor qilingan statusni saqlash
+      const isCancelled = order.status === 'cancelled';
 
       return {
         _id: order._id,
@@ -148,7 +157,7 @@ class ApiService {
         tableNumber,
         tableName: isSaboy ? 'Soboy' : tableName,
         items,
-        status: isPaid ? 'paid' : 'active',
+        status: isCancelled ? 'cancelled' : (isPaid ? 'paid' : 'active'),
         paymentStatus: isPaid ? 'paid' : 'pending',
         paymentType: order.paymentType,
         total: subtotal,

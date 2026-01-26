@@ -96,16 +96,30 @@ export function OrderCard({
 }: OrderCardProps) {
   const status = getStatusBadge(order);
   const activeItems = order.items.filter(item => item.status !== 'cancelled');
-  const displayItems = activeItems.slice(0, 3);
+
+  // To'langan va to'lanmagan itemlarni ajratish
+  const paidItems = activeItems.filter(item => item.isPaid);
+  const unpaidItems = activeItems.filter(item => !item.isPaid);
+
+  // Display uchun - avval unpaid, keyin paid
+  const displayItems = [...unpaidItems, ...paidItems].slice(0, 3);
   const remainingCount = activeItems.length - 3;
 
-  const subtotal = activeItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  // To'lanmagan itemlar summasi
+  const unpaidSubtotal = unpaidItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const paidSubtotal = paidItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  // Status statistics
-  const pendingCount = activeItems.filter(i => i.status === 'pending').length;
-  const preparingCount = activeItems.filter(i => i.status === 'preparing').length;
-  const readyCount = activeItems.filter(i => i.status === 'ready').length;
-  const servedCount = activeItems.filter(i => i.status === 'served').length;
+  // Xizmat haqi - faqat to'lanmagan itemlar uchun
+  const isSaboy = order.orderType === 'saboy';
+  const unpaidServiceFee = isSaboy ? 0 : Math.round(unpaidSubtotal * 0.1);
+  const unpaidTotal = unpaidSubtotal + unpaidServiceFee;
+
+  // Status statistics - faqat to'lanmagan itemlar uchun
+  const pendingCount = unpaidItems.filter(i => i.status === 'pending').length;
+  const preparingCount = unpaidItems.filter(i => i.status === 'preparing').length;
+  const readyCount = unpaidItems.filter(i => i.status === 'ready').length;
+  const servedCount = unpaidItems.filter(i => i.status === 'served').length;
+  const paidCount = paidItems.length;
 
   // To'langan orderlarni merge qilib bo'lmaydi
   const canBeMerged = order.paymentStatus !== 'paid';
@@ -196,6 +210,12 @@ export function OrderCard({
               <span>{servedCount}</span>
             </div>
           )}
+          {paidCount > 0 && (
+            <div className="flex items-center gap-1 px-2 py-1 rounded bg-[#22c55e]/20 text-[#22c55e] ml-auto">
+              <BiCheck className="text-xs" />
+              <span>{paidCount} to'langan</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -205,20 +225,25 @@ export function OrderCard({
           {displayItems.map((item, index) => {
             const itemStatus = getItemStatusBadge(item.status);
             const StatusIcon = itemStatus.icon;
+            const isPaidItem = item.isPaid;
 
             return (
               <div
                 key={item._id}
-                className={`flex justify-between items-center py-2 ${index > 0 ? 'border-t border-border' : ''}`}
+                className={`flex justify-between items-center py-2 ${index > 0 ? 'border-t border-border' : ''} ${isPaidItem ? 'opacity-50' : ''}`}
               >
                 <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-                  <span className="bg-[#262626] px-2.5 py-1 rounded-md text-xs font-semibold text-foreground min-w-[32px] text-center tabular-nums">
+                  <span className={`px-2.5 py-1 rounded-md text-xs font-semibold min-w-[32px] text-center tabular-nums ${isPaidItem ? 'bg-[#22c55e]/20 text-[#22c55e]' : 'bg-[#262626] text-foreground'}`}>
                     {item.quantity}x
                   </span>
-                  <span className={itemStatus.className}>{item.name}</span>
-                  {!isMergeMode && <StatusIcon className={`${itemStatus.className} text-sm`} />}
+                  <span className={isPaidItem ? 'line-through text-[#71717a]' : itemStatus.className}>{item.name}</span>
+                  {isPaidItem ? (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#22c55e]/20 text-[#22c55e] font-medium">TO'LANGAN</span>
+                  ) : (
+                    !isMergeMode && <StatusIcon className={`${itemStatus.className} text-sm`} />
+                  )}
                 </div>
-                <span className="text-sm text-muted-foreground tabular-nums">
+                <span className={`text-sm tabular-nums ${isPaidItem ? 'line-through text-[#71717a]' : 'text-muted-foreground'}`}>
                   {formatMoney(item.price * item.quantity)}
                 </span>
               </div>
@@ -233,20 +258,28 @@ export function OrderCard({
 
         {/* Totals */}
         <div className="flex flex-col gap-2 pt-4 border-t border-border">
+          {/* Agar to'langan itemlar bo'lsa */}
+          {paidSubtotal > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-[#22c55e]">To'langan:</span>
+              <span className="text-[#22c55e] tabular-nums line-through">{formatMoney(paidSubtotal + (isSaboy ? 0 : Math.round(paidSubtotal * 0.1)))}</span>
+            </div>
+          )}
+          {/* Qolgan to'lanmagan summa */}
           <div className="flex justify-between text-sm">
-            <span className="text-[#71717a]">Taomlar:</span>
-            <span className="text-muted-foreground tabular-nums">{formatMoney(subtotal)}</span>
+            <span className="text-[#71717a]">{paidSubtotal > 0 ? 'Qolgan taomlar:' : 'Taomlar:'}</span>
+            <span className="text-muted-foreground tabular-nums">{formatMoney(unpaidSubtotal)}</span>
           </div>
-          {order.orderType !== 'saboy' && order.serviceFee > 0 && (
+          {!isSaboy && unpaidServiceFee > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-[#3b82f6]">Xizmat haqi (10%):</span>
-              <span className="text-[#3b82f6] tabular-nums">{formatMoney(order.serviceFee)}</span>
+              <span className="text-[#3b82f6] tabular-nums">{formatMoney(unpaidServiceFee)}</span>
             </div>
           )}
           <div className="flex justify-between pt-2 border-t border-border">
-            <span className="text-sm font-semibold">Jami:</span>
+            <span className="text-sm font-semibold">{paidSubtotal > 0 ? 'Qolgan summa:' : 'Jami:'}</span>
             <span className={`text-lg font-bold tabular-nums ${isMergeMode && isSelected ? 'text-[#a855f7]' : 'text-[#22c55e]'}`}>
-              {formatMoney(order.grandTotal)}
+              {formatMoney(unpaidTotal)}
             </span>
           </div>
         </div>

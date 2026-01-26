@@ -1,4 +1,4 @@
-import { User, Restaurant, Order, DailySummary, PaymentType, PaymentSplit, SaboyItem } from "@/types";
+import { User, Restaurant, Order, DailySummary, PaymentType, PaymentSplit, SaboyItem, PartialPaymentResult, OrderItem } from "@/types";
 
 // Yangi backend v2 URL
 const API_BASE_URL =
@@ -112,6 +112,11 @@ class ApiService {
         quantity: item.quantity || 1,
         price: item.price || 0,
         status: item.status || item.kitchenStatus || 'pending',
+        // Payment fields
+        isPaid: item.isPaid || false,
+        paidAt: item.paidAt,
+        paymentSessionId: item.paymentSessionId,
+        itemPaymentType: item.itemPaymentType,
       }));
 
       const tableNumber = order.tableId?.number || order.tableNumber || 0;
@@ -257,6 +262,95 @@ class ApiService {
       createdAt: order.createdAt,
       paidAt: order.paidAt,
     } as Order;
+  }
+
+  // ========== PARTIAL PAYMENT (Qisman to'lov) ==========
+  async processPartialPayment(
+    orderId: string,
+    itemIds: string[],
+    paymentType: PaymentType,
+    paymentSplit?: PaymentSplit,
+    comment?: string,
+  ): Promise<PartialPaymentResult> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await this.request<any>(
+      `/api/orders/${orderId}/pay-items`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          itemIds,
+          paymentType,
+          paymentSplit,
+          comment,
+        }),
+      },
+    );
+
+    const order = data.data?.order || data.order;
+    const paymentSession = data.data?.paymentSession;
+
+    // Transform order items
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const items: OrderItem[] = (order.items || []).map((item: any, idx: number) => ({
+      _id: item._id || `item-${idx}`,
+      name: item.foodId?.name || item.foodName || item.name || 'Noma\'lum',
+      quantity: item.quantity || 1,
+      price: item.price || 0,
+      status: item.status || 'pending',
+      isPaid: item.isPaid || false,
+      paidAt: item.paidAt,
+      paymentSessionId: item.paymentSessionId,
+      itemPaymentType: item.itemPaymentType,
+    }));
+
+    const orderType = order.orderType || 'dine-in';
+    const isSaboy = orderType === 'saboy';
+    const subtotal = order.subtotal || items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const serviceChargePercent = isSaboy ? 0 : (order.serviceChargePercent || 10);
+    const serviceCharge = isSaboy ? 0 : (order.serviceCharge || Math.round(subtotal * (serviceChargePercent / 100)));
+    const grandTotal = order.grandTotal || (subtotal + serviceCharge);
+    const tableNumber = order.tableId?.number || 0;
+
+    const transformedOrder: Order = {
+      _id: order._id,
+      orderNumber: order.orderNumber || 1,
+      orderType: orderType,
+      saboyNumber: order.saboyNumber,
+      tableNumber,
+      tableName: isSaboy ? 'Soboy' : (order.tableId?.title || order.tableName || `Stol ${tableNumber}`),
+      items,
+      status: order.isPaid ? 'paid' : 'active',
+      paymentStatus: order.isPaid ? 'paid' : 'pending',
+      paymentType: order.paymentType,
+      total: subtotal,
+      serviceFee: serviceCharge,
+      grandTotal: grandTotal,
+      waiter: {
+        _id: order.waiterId?._id || '',
+        name: order.waiterId?.firstName
+          ? `${order.waiterId.firstName} ${order.waiterId.lastName}`
+          : (order.waiterName || 'Noma\'lum'),
+      },
+      createdAt: order.createdAt,
+      paidAt: order.paidAt,
+    };
+
+    return {
+      order: transformedOrder,
+      paymentSession: {
+        sessionId: paymentSession?.sessionId || '',
+        paidItems: paymentSession?.paidItems || [],
+        subtotal: paymentSession?.subtotal || 0,
+        serviceCharge: paymentSession?.serviceCharge || 0,
+        total: paymentSession?.total || 0,
+        paymentType: paymentSession?.paymentType || paymentType,
+        paidAt: paymentSession?.paidAt || new Date().toISOString(),
+      },
+      allItemsPaid: data.data?.allItemsPaid || false,
+      remainingTotal: data.data?.remainingTotal || 0,
+      paidTotal: data.data?.paidTotal || 0,
+      unpaidTotal: data.data?.unpaidTotal || 0,
+    };
   }
 
   async getWaiterStats(): Promise<

@@ -5,7 +5,7 @@ import { io, Socket } from "socket.io-client";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/services/api";
 import { PrinterAPI } from "@/services/printer";
-import { Order, DailySummary, PaymentType, PaymentSplit } from "@/types";
+import { Order, DailySummary, PaymentType, PaymentSplit, PartialPaymentResult } from "@/types";
 import { Header } from "./Header";
 import { SummaryCards } from "./SummaryCards";
 import { OrdersSection } from "./OrdersSection";
@@ -175,6 +175,30 @@ export function Dashboard() {
     }
   };
 
+  // Partial payment (qisman to'lov) handler
+  const handlePartialPayment = async (
+    orderId: string,
+    itemIds: string[],
+    paymentType: PaymentType,
+    paymentSplit?: PaymentSplit,
+    comment?: string,
+  ): Promise<PartialPaymentResult> => {
+    try {
+      const result = await api.processPartialPayment(orderId, itemIds, paymentType, paymentSplit, comment);
+
+      // Update local state
+      setOrders((prev) => prev.map((o) => (o._id === orderId ? result.order : o)));
+      await loadData();
+
+      return result;
+    } catch (error) {
+      console.error("Qisman to'lov xatosi:", error);
+      const errorMessage = error instanceof Error ? error.message : "To'lov amalga oshirilmadi";
+      alert(errorMessage);
+      throw error;
+    }
+  };
+
   const handlePayClick = (order: Order) => {
     setSelectedOrder(order);
     setIsPaymentOpen(true);
@@ -262,6 +286,7 @@ export function Dashboard() {
           setSelectedOrder(null);
         }}
         onConfirm={handlePayment}
+        onPartialConfirm={handlePartialPayment}
       />
 
       <SettingsModal

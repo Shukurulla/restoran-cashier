@@ -20,6 +20,36 @@ export interface OrderItem {
   readyAt?: string;
   cancelledAt?: string;
   cancelReason?: string;
+  // Payment tracking per item
+  isPaid?: boolean;
+  paidAt?: string;
+  paymentSessionId?: string;
+  itemPaymentType?: PaymentType;
+}
+
+export interface PartialPaymentSession {
+  sessionId: string;
+  paidItems: {
+    itemId: string;
+    foodName: string;
+    quantity: number;
+    price: number;
+    subtotal: number;
+  }[];
+  subtotal: number;
+  serviceCharge: number;
+  total: number;
+  paymentType: PaymentType;
+  paidAt: string;
+}
+
+export interface PartialPaymentResult {
+  order: Order;
+  paymentSession: PartialPaymentSession;
+  allItemsPaid: boolean;
+  remainingTotal: number;
+  paidTotal: number;
+  unpaidTotal: number;
 }
 
 export type PaymentType = 'cash' | 'card' | 'click';

@@ -106,6 +106,35 @@ export function SaboyModal({ isOpen, onClose, onSuccess }: SaboyModalProps) {
     return selectedItems.find(i => i._id === itemId)?.quantity || 0;
   };
 
+  // Quantity ni to'g'ridan-to'g'ri o'zgartirish
+  const updateItemQuantity = (itemId: string, newQuantity: number, allowZero = false) => {
+    if (newQuantity <= 0 && !allowZero) {
+      setSelectedItems(prev => prev.filter(i => i._id !== itemId));
+    } else {
+      setSelectedItems(prev =>
+        prev.map(i =>
+          i._id === itemId ? { ...i, quantity: Math.max(0, newQuantity) } : i
+        )
+      );
+    }
+  };
+
+  // Input uchun - bo'sh qoldirish mumkin
+  const handleQuantityInput = (itemId: string, value: string) => {
+    const numValue = value === '' ? 0 : parseInt(value);
+    if (!isNaN(numValue)) {
+      updateItemQuantity(itemId, numValue, true);
+    }
+  };
+
+  // Input dan chiqqanda tekshirish - agar 0 yoki bo'sh bo'lsa, o'chirish
+  const handleQuantityBlur = (itemId: string) => {
+    const item = selectedItems.find(i => i._id === itemId);
+    if (item && item.quantity <= 0) {
+      setSelectedItems(prev => prev.filter(i => i._id !== itemId));
+    }
+  };
+
   // Jami summa
   const total = selectedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -214,19 +243,27 @@ export function SaboyModal({ isOpen, onClose, onSuccess }: SaboyModalProps) {
                         <div className="flex items-center justify-between mt-3">
                           <span className="text-xs text-muted-foreground">{formatMoney(item.price)}</span>
                           {qty > 0 && (
-                            <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                            <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                               <button
                                 onClick={() => removeItem(item._id)}
-                                className="w-7 h-7 bg-[#ef4444] rounded flex items-center justify-center text-white"
+                                className="w-6 h-6 bg-[#ef4444] rounded flex items-center justify-center text-white"
                               >
-                                <BiMinus className="text-sm" />
+                                <BiMinus className="text-xs" />
                               </button>
-                              <span className="text-sm font-semibold w-6 text-center">{qty}</span>
+                              <input
+                                type="number"
+                                min="1"
+                                value={qty || ''}
+                                onChange={(e) => handleQuantityInput(item._id, e.target.value)}
+                                onBlur={() => handleQuantityBlur(item._id)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-10 h-6 text-sm font-semibold text-center bg-[#1a1a1a] border border-border rounded focus:outline-none focus:border-[#f97316]"
+                              />
                               <button
                                 onClick={() => addItem(item)}
-                                className="w-7 h-7 bg-[#22c55e] rounded flex items-center justify-center text-white"
+                                className="w-6 h-6 bg-[#22c55e] rounded flex items-center justify-center text-white"
                               >
-                                <BiPlus className="text-sm" />
+                                <BiPlus className="text-xs" />
                               </button>
                             </div>
                           )}
@@ -263,7 +300,14 @@ export function SaboyModal({ isOpen, onClose, onSuccess }: SaboyModalProps) {
                       >
                         <BiMinus className="text-base" />
                       </button>
-                      <span className="text-base font-semibold w-8 text-center">{item.quantity}</span>
+                      <input
+                        type="number"
+                        min="1"
+                        value={item.quantity || ''}
+                        onChange={(e) => handleQuantityInput(item._id, e.target.value)}
+                        onBlur={() => handleQuantityBlur(item._id)}
+                        className="w-14 h-8 text-base font-semibold text-center bg-[#262626] border border-border rounded-lg focus:outline-none focus:border-[#f97316]"
+                      />
                       <button
                         onClick={() => addItem(item)}
                         className="w-8 h-8 bg-[#22c55e] rounded-lg flex items-center justify-center text-white"

@@ -105,7 +105,9 @@ export function OrderCard({ order, onPayClick, onDetailsClick, onPrintClick }: O
             <BiTable />
           </div>
           <div>
-            <h3 className="text-[15px] font-semibold">{order.tableName}</h3>
+            <h3 className="text-[15px] font-semibold">
+              {order.orderType === 'saboy' ? 'Soboy' : order.tableName}
+            </h3>
             <div className="flex items-center gap-1 text-xs text-[#71717a] mt-0.5">
               <BiUser />
               <span>{order.waiter.name}</span>
@@ -185,10 +187,12 @@ export function OrderCard({ order, onPayClick, onDetailsClick, onPrintClick }: O
             <span className="text-[#71717a]">Taomlar:</span>
             <span className="text-muted-foreground tabular-nums">{formatMoney(subtotal)}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-[#3b82f6]">Xizmat haqi (10%):</span>
-            <span className="text-[#3b82f6] tabular-nums">{formatMoney(order.serviceFee)}</span>
-          </div>
+          {order.orderType !== 'saboy' && order.serviceFee > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-[#3b82f6]">Xizmat haqi (10%):</span>
+              <span className="text-[#3b82f6] tabular-nums">{formatMoney(order.serviceFee)}</span>
+            </div>
+          )}
           <div className="flex justify-between pt-2 border-t border-border">
             <span className="text-sm font-semibold">Jami:</span>
             <span className="text-lg font-bold text-[#22c55e] tabular-nums">{formatMoney(order.grandTotal)}</span>

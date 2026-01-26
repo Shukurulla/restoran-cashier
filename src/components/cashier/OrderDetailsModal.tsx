@@ -35,7 +35,7 @@ export function OrderDetailsModal({ order, isOpen, onClose, onPayClick }: OrderD
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2.5 text-lg">
             <BiListUl className="text-[#3b82f6]" />
-            {order.tableName}
+            {order.orderType === 'saboy' ? 'Soboy' : order.tableName}
           </DialogTitle>
         </DialogHeader>
 

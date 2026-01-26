@@ -87,8 +87,10 @@ export function PaymentModal({ order, isOpen, onClose, onConfirm }: PaymentModal
           {/* Order Info - bir qatorda */}
           <div className="bg-secondary rounded-xl p-3 flex gap-6">
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">Stol:</span>
-              <span className="font-semibold">{order.tableName}</span>
+              <span className="text-muted-foreground">{order.orderType === 'saboy' ? 'Turi:' : 'Stol:'}</span>
+              <span className="font-semibold">
+                {order.orderType === 'saboy' ? 'Soboy' : order.tableName}
+              </span>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">Ofitsiant:</span>
@@ -116,11 +118,13 @@ export function PaymentModal({ order, isOpen, onClose, onConfirm }: PaymentModal
               <span>Taomlar:</span>
               <span className="tabular-nums">{formatMoney(subtotal)}</span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-[#3b82f6] border-l border-border pl-4">
-              <span>Xizmat (10%):</span>
-              <span className="tabular-nums">{formatMoney(order.serviceFee)}</span>
-            </div>
-            <div className="flex items-center gap-3 ml-auto border-l border-border pl-4">
+            {order.orderType !== 'saboy' && order.serviceFee > 0 && (
+              <div className="flex items-center gap-2 text-sm text-[#3b82f6] border-l border-border pl-4">
+                <span>Xizmat (10%):</span>
+                <span className="tabular-nums">{formatMoney(order.serviceFee)}</span>
+              </div>
+            )}
+            <div className={`flex items-center gap-3 ml-auto ${order.orderType !== 'saboy' && order.serviceFee > 0 ? 'border-l border-border pl-4' : ''}`}>
               <span className="font-medium text-sm">Jami:</span>
               <span className="text-xl font-bold text-[#22c55e] tabular-nums">
                 {formatMoney(grandTotal)}

@@ -1,7 +1,7 @@
 'use client';
 
 import { Order, OrderItem } from '@/types';
-import { BiTable, BiUser, BiCheck, BiPrinter, BiTime, BiLoader } from 'react-icons/bi';
+import { BiTable, BiUser, BiCheck, BiPrinter, BiTime, BiLoader, BiPlus } from 'react-icons/bi';
 import { MdDeliveryDining } from 'react-icons/md';
 
 interface OrderCardProps {
@@ -9,6 +9,7 @@ interface OrderCardProps {
   onPayClick: (order: Order) => void;
   onDetailsClick: (order: Order) => void;
   onPrintClick?: (order: Order) => void;
+  onAddItemsClick?: (order: Order) => void;
   // Merge mode props
   isMergeMode?: boolean;
   isSelected?: boolean;
@@ -89,13 +90,15 @@ export function OrderCard({
   onPayClick,
   onDetailsClick,
   onPrintClick,
+  onAddItemsClick,
   isMergeMode = false,
   isSelected = false,
   selectionIndex = -1,
   onToggleSelect,
 }: OrderCardProps) {
   const status = getStatusBadge(order);
-  const activeItems = order.items.filter(item => item.status !== 'cancelled');
+  // isDeleted va cancelled itemlarni chiqarish
+  const activeItems = order.items.filter(item => !item.isDeleted && item.status !== 'cancelled');
 
   // To'langan va to'lanmagan itemlarni ajratish
   const paidItems = activeItems.filter(item => item.isPaid);
@@ -298,6 +301,17 @@ export function OrderCard({
             >
               <BiPrinter className="text-lg" />
               Chek
+            </button>
+          )}
+          {order.paymentStatus !== 'paid' && onAddItemsClick && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddItemsClick(order);
+              }}
+              className="py-2.5 px-4 bg-[#262626] border border-[#3b82f6] rounded-lg text-[#3b82f6] text-sm font-semibold hover:bg-[#3b82f6]/10 transition-colors flex items-center gap-1"
+            >
+              <BiPlus className="text-lg" />
             </button>
           )}
           {order.paymentStatus !== 'paid' && (

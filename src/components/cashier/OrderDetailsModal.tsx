@@ -3,13 +3,14 @@
 import { Order } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { BiListUl, BiUser, BiTime, BiCheck, BiX, BiMoney } from 'react-icons/bi';
+import { BiListUl, BiUser, BiTime, BiCheck, BiX, BiMoney, BiPlus } from 'react-icons/bi';
 
 interface OrderDetailsModalProps {
   order: Order | null;
   isOpen: boolean;
   onClose: () => void;
   onPayClick: (order: Order) => void;
+  onAddItemsClick?: (order: Order) => void;
 }
 
 const formatMoney = (amount: number) => {
@@ -23,11 +24,12 @@ const formatTime = (dateStr: string) => {
   });
 };
 
-export function OrderDetailsModal({ order, isOpen, onClose, onPayClick }: OrderDetailsModalProps) {
+export function OrderDetailsModal({ order, isOpen, onClose, onPayClick, onAddItemsClick }: OrderDetailsModalProps) {
   if (!order) return null;
 
-  const activeItems = order.items.filter(item => item.status !== 'cancelled');
-  const cancelledItems = order.items.filter(item => item.status === 'cancelled');
+  // isDeleted itemlarni chiqarish
+  const activeItems = order.items.filter(item => !item.isDeleted && item.status !== 'cancelled');
+  const cancelledItems = order.items.filter(item => !item.isDeleted && item.status === 'cancelled');
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -107,20 +109,33 @@ export function OrderDetailsModal({ order, isOpen, onClose, onPayClick }: OrderD
           </div>
         </div>
 
-        <DialogFooter className="gap-3">
-          <Button variant="outline" onClick={onClose} className="flex-1">
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose}>
             Yopish
           </Button>
+          {order.paymentStatus !== 'paid' && onAddItemsClick && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                onClose();
+                onAddItemsClick(order);
+              }}
+              className="border-[#3b82f6] text-[#3b82f6] hover:bg-[#3b82f6]/10"
+            >
+              <BiPlus className="mr-1" />
+              Taom qo&apos;shish
+            </Button>
+          )}
           {order.paymentStatus !== 'paid' && (
             <Button
               onClick={() => {
                 onClose();
                 onPayClick(order);
               }}
-              className="flex-1 bg-[#22c55e] hover:bg-[#22c55e]/90 text-white"
+              className="bg-[#22c55e] hover:bg-[#22c55e]/90 text-white"
             >
-              <BiMoney className="mr-2" />
-              To&apos;lov qabul qilish
+              <BiMoney className="mr-1" />
+              To&apos;lov
             </Button>
           )}
         </DialogFooter>

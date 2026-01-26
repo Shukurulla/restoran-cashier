@@ -11,10 +11,11 @@ interface OrdersSectionProps {
   onPayClick: (order: Order) => void;
   onDetailsClick: (order: Order) => void;
   onPrintClick?: (order: Order) => void;
+  onAddItemsClick?: (order: Order) => void;
   onMergeSuccess?: () => void;
 }
 
-export function OrdersSection({ orders, onPayClick, onDetailsClick, onPrintClick, onMergeSuccess }: OrdersSectionProps) {
+export function OrdersSection({ orders, onPayClick, onDetailsClick, onPrintClick, onAddItemsClick, onMergeSuccess }: OrdersSectionProps) {
   const [filter, setFilter] = useState<FilterType>('active');
   const [searchQuery, setSearchQuery] = useState('');
   const [isMergeMode, setIsMergeMode] = useState(false);
@@ -261,6 +262,7 @@ export function OrdersSection({ orders, onPayClick, onDetailsClick, onPrintClick
                 onPayClick={onPayClick}
                 onDetailsClick={onDetailsClick}
                 onPrintClick={onPrintClick}
+                onAddItemsClick={onAddItemsClick}
                 isMergeMode={isMergeMode}
                 isSelected={selectedOrderIds.includes(order._id)}
                 selectionIndex={selectedOrderIds.indexOf(order._id)}

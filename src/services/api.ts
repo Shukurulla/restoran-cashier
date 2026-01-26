@@ -105,19 +105,23 @@ class ApiService {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return orders.map((order: any, index: number) => {
       // Yangi format: items[] (eski selectFoods/allOrders o'rniga)
+      // isDeleted itemlarni filter qilamiz
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const items = (order.items || []).map((item: any, idx: number) => ({
-        _id: item._id || `item-${idx}`,
-        name: item.foodId?.name || item.foodName || item.name || 'Noma\'lum',
-        quantity: item.quantity || 1,
-        price: item.price || 0,
-        status: item.status || item.kitchenStatus || 'pending',
-        // Payment fields
-        isPaid: item.isPaid || false,
-        paidAt: item.paidAt,
-        paymentSessionId: item.paymentSessionId,
-        itemPaymentType: item.itemPaymentType,
-      }));
+      const items = (order.items || [])
+        .filter((item: any) => !item.isDeleted)
+        .map((item: any, idx: number) => ({
+          _id: item._id || `item-${idx}`,
+          name: item.foodId?.name || item.foodName || item.name || 'Noma\'lum',
+          quantity: item.quantity || 1,
+          price: item.price || 0,
+          status: item.status || item.kitchenStatus || 'pending',
+          isDeleted: item.isDeleted || false,
+          // Payment fields
+          isPaid: item.isPaid || false,
+          paidAt: item.paidAt,
+          paymentSessionId: item.paymentSessionId,
+          itemPaymentType: item.itemPaymentType,
+        }));
 
       const tableNumber = order.tableId?.number || order.tableNumber || 0;
       const tableName = order.tableId?.number ? `Stol ${order.tableId.number}` : (order.tableName || 'Noma\'lum stol');
@@ -217,13 +221,16 @@ class ApiService {
 
     const order = data.data || data.order || data;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const items = (order.items || []).map((item: any, idx: number) => ({
-      _id: item._id || `item-${idx}`,
-      name: item.foodId?.name || item.foodName || item.name || 'Noma\'lum',
-      quantity: item.quantity || 1,
-      price: item.price || 0,
-      status: 'ready',
-    }));
+    const items = (order.items || [])
+      .filter((item: any) => !item.isDeleted)
+      .map((item: any, idx: number) => ({
+        _id: item._id || `item-${idx}`,
+        name: item.foodId?.name || item.foodName || item.name || 'Noma\'lum',
+        quantity: item.quantity || 1,
+        price: item.price || 0,
+        status: 'ready',
+        isDeleted: item.isDeleted || false,
+      }));
 
     // Order type - saboy yoki dine-in
     const orderType = order.orderType || (order.isSaboy ? 'saboy' : undefined);
@@ -289,19 +296,22 @@ class ApiService {
     const order = data.data?.order || data.order;
     const paymentSession = data.data?.paymentSession;
 
-    // Transform order items
+    // Transform order items (filter isDeleted)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const items: OrderItem[] = (order.items || []).map((item: any, idx: number) => ({
-      _id: item._id || `item-${idx}`,
-      name: item.foodId?.name || item.foodName || item.name || 'Noma\'lum',
-      quantity: item.quantity || 1,
-      price: item.price || 0,
-      status: item.status || 'pending',
-      isPaid: item.isPaid || false,
-      paidAt: item.paidAt,
-      paymentSessionId: item.paymentSessionId,
-      itemPaymentType: item.itemPaymentType,
-    }));
+    const items: OrderItem[] = (order.items || [])
+      .filter((item: any) => !item.isDeleted)
+      .map((item: any, idx: number) => ({
+        _id: item._id || `item-${idx}`,
+        name: item.foodId?.name || item.foodName || item.name || 'Noma\'lum',
+        quantity: item.quantity || 1,
+        price: item.price || 0,
+        status: item.status || 'pending',
+        isDeleted: item.isDeleted || false,
+        isPaid: item.isPaid || false,
+        paidAt: item.paidAt,
+        paymentSessionId: item.paymentSessionId,
+        itemPaymentType: item.itemPaymentType,
+      }));
 
     const orderType = order.orderType || 'dine-in';
     const isSaboy = orderType === 'saboy';
@@ -460,6 +470,67 @@ class ApiService {
       _id: cat._id,
       title: cat.name || cat.title || '',
     }));
+  }
+
+  // ========== ADD ITEMS TO ORDER ==========
+  async addItemsToOrder(
+    orderId: string,
+    items: { foodId: string; name: string; price: number; quantity: number }[],
+  ): Promise<Order> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await this.request<any>(`/api/orders/${orderId}/items`, {
+      method: 'POST',
+      body: JSON.stringify({ items }),
+    });
+
+    const order = data.data || data.order || data;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const orderItems = (order.items || [])
+      .filter((item: any) => !item.isDeleted)
+      .map((item: any, idx: number) => ({
+        _id: item._id || `item-${idx}`,
+        name: item.foodId?.name || item.foodName || item.name || 'Noma\'lum',
+        quantity: item.quantity || 1,
+        price: item.price || 0,
+        status: item.status || item.kitchenStatus || 'pending',
+        isDeleted: item.isDeleted || false,
+        isPaid: item.isPaid || false,
+        paidAt: item.paidAt,
+        paymentSessionId: item.paymentSessionId,
+        itemPaymentType: item.itemPaymentType,
+      }));
+
+    const orderType = order.orderType || 'dine-in';
+    const isSaboy = orderType === 'saboy';
+    const subtotal = orderItems.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0);
+    const serviceChargePercent = isSaboy ? 0 : 10;
+    const serviceCharge = isSaboy ? 0 : Math.round(subtotal * (serviceChargePercent / 100));
+    const grandTotal = subtotal + serviceCharge;
+    const tableNumber = order.tableId?.number || 0;
+
+    return {
+      _id: order._id,
+      orderNumber: order.orderNumber || 1,
+      orderType: orderType,
+      saboyNumber: order.saboyNumber,
+      tableNumber,
+      tableName: isSaboy ? 'Soboy' : (order.tableId?.title || order.tableName || `Stol ${tableNumber}`),
+      items: orderItems,
+      status: order.isPaid ? 'paid' : 'active',
+      paymentStatus: order.isPaid ? 'paid' : 'pending',
+      paymentType: order.paymentType,
+      total: subtotal,
+      serviceFee: serviceCharge,
+      grandTotal: grandTotal,
+      waiter: {
+        _id: order.waiterId?._id || '',
+        name: order.waiterId?.firstName
+          ? `${order.waiterId.firstName} ${order.waiterId.lastName}`
+          : (order.waiterName || 'Noma\'lum'),
+      },
+      createdAt: order.createdAt,
+      paidAt: order.paidAt,
+    } as Order;
   }
 
   // ========== MERGE ORDERS ==========

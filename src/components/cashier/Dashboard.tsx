@@ -14,6 +14,7 @@ import { SettingsModal } from "./SettingsModal";
 import { ReportsModal } from "./ReportsModal";
 import { OrderDetailsModal } from "./OrderDetailsModal";
 import { SaboyModal } from "./SaboyModal";
+import { AddItemsModal } from "./AddItemsModal";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://server-v2.kepket.uz";
 
@@ -40,6 +41,8 @@ export function Dashboard() {
   const [isReportsOpen, setIsReportsOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isSaboyOpen, setIsSaboyOpen] = useState(false);
+  const [addItemsOrder, setAddItemsOrder] = useState<Order | null>(null);
+  const [isAddItemsOpen, setIsAddItemsOpen] = useState(false);
 
   // Audio for notifications
   const [audio] = useState(() => {
@@ -209,6 +212,16 @@ export function Dashboard() {
     setIsDetailsOpen(true);
   };
 
+  const handleAddItemsClick = (order: Order) => {
+    setAddItemsOrder(order);
+    setIsAddItemsOpen(true);
+  };
+
+  const handleAddItemsSuccess = (updatedOrder: Order) => {
+    setOrders((prev) => prev.map((o) => (o._id === updatedOrder._id ? updatedOrder : o)));
+    loadData();
+  };
+
   const handlePrintClick = async (order: Order) => {
     console.log("Chek chiqarish boshlandi:", order._id);
 
@@ -274,6 +287,7 @@ export function Dashboard() {
         onPayClick={handlePayClick}
         onDetailsClick={handleDetailsClick}
         onPrintClick={handlePrintClick}
+        onAddItemsClick={handleAddItemsClick}
         onMergeSuccess={loadData}
       />
 
@@ -308,12 +322,23 @@ export function Dashboard() {
           setDetailsOrder(null);
         }}
         onPayClick={handlePayClick}
+        onAddItemsClick={handleAddItemsClick}
       />
 
       <SaboyModal
         isOpen={isSaboyOpen}
         onClose={() => setIsSaboyOpen(false)}
         onSuccess={loadData}
+      />
+
+      <AddItemsModal
+        order={addItemsOrder}
+        isOpen={isAddItemsOpen}
+        onClose={() => {
+          setIsAddItemsOpen(false);
+          setAddItemsOrder(null);
+        }}
+        onSuccess={handleAddItemsSuccess}
       />
     </div>
   );

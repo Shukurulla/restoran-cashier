@@ -20,6 +20,8 @@ export interface OrderItem {
   readyAt?: string;
   cancelledAt?: string;
   cancelReason?: string;
+  // Soft delete
+  isDeleted?: boolean;
   // Payment tracking per item
   isPaid?: boolean;
   paidAt?: string;

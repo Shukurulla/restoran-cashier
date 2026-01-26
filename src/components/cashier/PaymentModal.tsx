@@ -45,15 +45,15 @@ export function PaymentModal({ order, isOpen, onClose, onConfirm, onPartialConfi
   // Tanlangan itemlar - useMemo MUST be before early return
   const selectedItems = useMemo(() => {
     if (!order) return [];
-    const activeItems = order.items.filter(item => item.status !== 'cancelled');
+    const activeItems = order.items.filter(item => !item.isDeleted && item.status !== 'cancelled');
     const unpaidItems = activeItems.filter(item => !item.isPaid);
     return unpaidItems.filter(item => selectedItemIds.has(item._id));
   }, [order, selectedItemIds]);
 
   if (!order) return null;
 
-  // Faol itemlar (cancelled bo'lmaganlar)
-  const activeItems = order.items.filter(item => item.status !== 'cancelled');
+  // Faol itemlar (isDeleted va cancelled bo'lmaganlar)
+  const activeItems = order.items.filter(item => !item.isDeleted && item.status !== 'cancelled');
 
   // To'lanmagan itemlar
   const unpaidItems = activeItems.filter(item => !item.isPaid);

@@ -214,7 +214,7 @@ export function Dashboard() {
             orderNumber: data.orderNumber,
             tableName: data.tableName,
             waiterName: data.waiterName || "",
-            items: data.items || [],
+            items: (data.items || []).filter((item: Record<string, unknown>) => item.status !== 'cancelled' && !item.isCancelled),
             subtotal: data.subtotal || 0,
             serviceFee: data.serviceFee || 0,
             total: data.total || 0,
@@ -350,7 +350,7 @@ export function Dashboard() {
           tableName: order.tableName,
           waiterName: order.waiter.name,
           items: order.items
-            .filter((item) => item.status !== "cancelled")
+            .filter((item) => item.status !== "cancelled" && !item.isCancelled)
             .map((item) => ({
               name: item.name,
               quantity: item.quantity,

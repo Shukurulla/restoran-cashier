@@ -55,16 +55,25 @@ export function Dashboard() {
     return null;
   });
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (shiftId?: string) => {
     try {
-      const [ordersData, summaryData, shiftData] = await Promise.all([
-        api.getOrders(),
-        api.getDailySummary(),
-        api.getActiveShift(),
+      // Agar shiftId berilmagan bo'lsa, avval aktiv smenani olamiz
+      let currentShiftId = shiftId;
+      let shiftData: Shift | null = null;
+
+      if (!currentShiftId) {
+        shiftData = await api.getActiveShift();
+        currentShiftId = shiftData?._id;
+        setActiveShift(shiftData);
+      }
+
+      // ShiftId bo'yicha orderlar va summaryni olish
+      const [ordersData, summaryData] = await Promise.all([
+        api.getOrders(currentShiftId),
+        api.getDailySummary(currentShiftId),
       ]);
       setOrders(ordersData);
       setSummary(summaryData);
-      setActiveShift(shiftData);
     } catch (error) {
       console.error("Failed to load data:", error);
     }
@@ -161,13 +170,24 @@ export function Dashboard() {
     newSocket.on("shift:opened", (data) => {
       console.log("Smena ochildi:", data);
       setActiveShift(data.shift);
-      loadData();
+      // Yangi smena ID si bilan ma'lumotlarni yuklash - 0 dan boshlaydi
+      loadData(data.shift?._id);
     });
 
-    newSocket.on("shift:closed", (data) => {
-      console.log("Smena yopildi:", data);
+    newSocket.on("shift:closed", () => {
+      console.log("Smena yopildi");
       setActiveShift(null);
-      loadData();
+      // Smena yopilganda ma'lumotlarni tozalash
+      setOrders([]);
+      setSummary({
+        totalRevenue: 0,
+        totalOrders: 0,
+        cashRevenue: 0,
+        cardRevenue: 0,
+        clickRevenue: 0,
+        activeOrders: 0,
+        paidOrders: 0,
+      });
     });
 
     newSocket.on("shift:updated", (data) => {

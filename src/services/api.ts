@@ -2,7 +2,7 @@ import { User, Restaurant, Order, DailySummary, PaymentType, PaymentSplit, Saboy
 
 // Yangi backend v2 URL
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://server-v2.kepket.uz";
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3010";
 
 class ApiService {
   private token: string | null = null;
@@ -95,9 +95,15 @@ class ApiService {
   }
 
   // ========== ORDERS (yangi format: items[] massiv) ==========
-  async getOrders(): Promise<Order[]> {
+  async getOrders(shiftId?: string): Promise<Order[]> {
+    // ShiftId bo'yicha filter - yangi smena ochilganda faqat shu smenadagi orderlarni olish
+    const params = new URLSearchParams();
+    if (shiftId) {
+      params.append('shiftId', shiftId);
+    }
+    const queryString = params.toString();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = await this.request<any>("/api/orders/today");
+    const data = await this.request<any>(`/api/orders/today${queryString ? '?' + queryString : ''}`);
 
     // Yangi backend: { success, data: { orders } }
     const orders = data.data?.orders || data.data || data.orders || [];
@@ -175,9 +181,15 @@ class ApiService {
     });
   }
 
-  async getDailySummary(): Promise<DailySummary> {
+  async getDailySummary(shiftId?: string): Promise<DailySummary> {
+    // ShiftId bo'yicha filter - yangi smena ochilganda faqat shu smenadagi statistikani olish
+    const params = new URLSearchParams();
+    params.append('period', 'today');
+    if (shiftId) {
+      params.append('shiftId', shiftId);
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = await this.request<any>("/api/reports/dashboard?period=today");
+    const data = await this.request<any>(`/api/reports/dashboard?${params.toString()}`);
 
     const summary = data.data?.summary || data.summary || {};
 
@@ -185,8 +197,14 @@ class ApiService {
     let cashRevenue = 0, cardRevenue = 0, clickRevenue = 0;
     try {
       const today = new Date().toISOString().split('T')[0];
+      // ShiftId ni payments endpoint ga ham uzatish
+      const paymentParams = new URLSearchParams();
+      paymentParams.append('startDate', today);
+      if (shiftId) {
+        paymentParams.append('shiftId', shiftId);
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const paymentData = await this.request<any>(`/api/reports/payments?startDate=${today}`);
+      const paymentData = await this.request<any>(`/api/reports/payments?${paymentParams.toString()}`);
       const breakdown = paymentData.data?.paymentBreakdown || [];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       cashRevenue = breakdown.find((p: any) => p.method === 'cash')?.total || 0;

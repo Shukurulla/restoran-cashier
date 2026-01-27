@@ -89,6 +89,9 @@ export interface Order {
   };
   createdAt: string;
   paidAt?: string;
+  // Soatlik to'lov (hourly charge) uchun
+  hasHourlyCharge?: boolean;
+  hourlyChargeAmount?: number;
 }
 
 // Saboy uchun taom ma'lumotlari
@@ -128,6 +131,9 @@ export interface PaymentData {
   }[];
   subtotal: number;
   serviceFee: number;
+  // Soatlik to'lov (hourly charge)
+  hourlyCharge?: number;
+  hourlyHours?: number;
   total: number;
   paymentType: PaymentType;
   paymentSplit?: PaymentSplit;

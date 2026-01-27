@@ -177,6 +177,9 @@ class ApiService {
         },
         createdAt: order.createdAt,
         paidAt: order.paidAt,
+        // Soatlik to'lov (hourly charge) ma'lumotlari
+        hasHourlyCharge: order.tableId?.hasHourlyCharge || false,
+        hourlyChargeAmount: order.tableId?.hourlyChargeAmount || 0,
       } as Order;
     });
   }

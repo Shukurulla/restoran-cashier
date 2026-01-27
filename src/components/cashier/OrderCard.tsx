@@ -1,8 +1,28 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Order, OrderItem } from '@/types';
 import { BiTable, BiUser, BiCheck, BiPrinter, BiTime, BiLoader, BiPlus } from 'react-icons/bi';
 import { MdDeliveryDining } from 'react-icons/md';
+
+// Soatlik to'lovni hisoblash funksiyasi
+const calculateHourlyCharge = (order: Order): { hours: number; charge: number } => {
+  if (!order.hasHourlyCharge || !order.hourlyChargeAmount || order.hourlyChargeAmount <= 0) {
+    return { hours: 0, charge: 0 };
+  }
+
+  const createdAt = new Date(order.createdAt);
+  const now = new Date();
+  const diffMs = now.getTime() - createdAt.getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+
+  // Agar hech qanday vaqt o'tmagan bo'lsa ham, 1 soat hisoblanadi
+  // Har bir soatdan o'tgan holda yangi soat qo'shiladi
+  const hours = Math.max(1, Math.ceil(diffHours));
+  const charge = hours * order.hourlyChargeAmount;
+
+  return { hours, charge };
+};
 
 interface OrderCardProps {
   order: Order;
@@ -108,6 +128,26 @@ export function OrderCard({
   selectionIndex = -1,
   onToggleSelect,
 }: OrderCardProps) {
+  // Soatlik to'lovni hisoblash va har daqiqada yangilash
+  const [hourlyChargeData, setHourlyChargeData] = useState(() => calculateHourlyCharge(order));
+
+  useEffect(() => {
+    // Agar soatlik to'lov bo'lmasa yoki order to'langan bo'lsa, yangilamaslik
+    if (!order.hasHourlyCharge || order.paymentStatus === 'paid') {
+      return;
+    }
+
+    // Dastlabki hisoblash
+    setHourlyChargeData(calculateHourlyCharge(order));
+
+    // Har daqiqada yangilash
+    const interval = setInterval(() => {
+      setHourlyChargeData(calculateHourlyCharge(order));
+    }, 60000); // 1 daqiqa
+
+    return () => clearInterval(interval);
+  }, [order.createdAt, order.hasHourlyCharge, order.hourlyChargeAmount, order.paymentStatus]);
+
   const status = getStatusBadge(order);
   // isDeleted itemlarni chiqarish, cancelled itemlarni ko'rsatamiz (usti chizilgan holda)
   const allItems = order.items.filter(item => !item.isDeleted);
@@ -129,7 +169,10 @@ export function OrderCard({
   // Xizmat haqi - faqat to'lanmagan itemlar uchun
   const isSaboy = order.orderType === 'saboy';
   const unpaidServiceFee = isSaboy ? 0 : Math.round(unpaidSubtotal * 0.1);
-  const unpaidTotal = unpaidSubtotal + unpaidServiceFee;
+
+  // Soatlik to'lov - faqat to'lanmagan order uchun
+  const hourlyCharge = order.paymentStatus !== 'paid' ? hourlyChargeData.charge : 0;
+  const unpaidTotal = unpaidSubtotal + unpaidServiceFee + hourlyCharge;
 
   // Status statistics - faqat to'lanmagan itemlar uchun
   const pendingCount = unpaidItems.filter(i => i.status === 'pending').length;
@@ -298,6 +341,16 @@ export function OrderCard({
             <div className="flex justify-between text-sm">
               <span className="text-[#3b82f6]">Xizmat haqi (10%):</span>
               <span className="text-[#3b82f6] tabular-nums">{formatMoney(unpaidServiceFee)}</span>
+            </div>
+          )}
+          {/* Soatlik to'lov */}
+          {hourlyCharge > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-[#a855f7]">
+                <BiTime className="inline mr-1" />
+                Bandlik ({hourlyChargeData.hours} soat):
+              </span>
+              <span className="text-[#a855f7] tabular-nums">{formatMoney(hourlyCharge)}</span>
             </div>
           )}
           <div className="flex justify-between pt-2 border-t border-border">

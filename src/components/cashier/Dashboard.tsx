@@ -327,6 +327,21 @@ export function Dashboard() {
 
     const paymentType = order.paymentType || "cash";
 
+    // Soatlik to'lovni hisoblash
+    let hourlyCharge = 0;
+    let hourlyHours = 0;
+    if (order.hasHourlyCharge && order.hourlyChargeAmount && order.hourlyChargeAmount > 0) {
+      const createdAt = new Date(order.createdAt);
+      const now = new Date();
+      const diffMs = now.getTime() - createdAt.getTime();
+      const diffHours = diffMs / (1000 * 60 * 60);
+      hourlyHours = Math.max(1, Math.ceil(diffHours));
+      hourlyCharge = hourlyHours * order.hourlyChargeAmount;
+    }
+
+    // Total ni qayta hisoblash (bandlik bilan)
+    const totalWithHourly = order.grandTotal + hourlyCharge;
+
     try {
       const result = await PrinterAPI.printPayment(
         {
@@ -343,7 +358,9 @@ export function Dashboard() {
             })),
           subtotal: order.total,
           serviceFee: order.serviceFee,
-          total: order.grandTotal,
+          hourlyCharge: hourlyCharge > 0 ? hourlyCharge : undefined,
+          hourlyHours: hourlyHours > 0 ? hourlyHours : undefined,
+          total: totalWithHourly,
           paymentType,
           restaurantName: restaurant?.name || "Restoran",
           date: new Date().toLocaleString("uz-UZ"),

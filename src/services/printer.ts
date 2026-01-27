@@ -39,7 +39,9 @@ export const PrinterAPI = {
           })),
           itemsTotal: paymentData.subtotal,       // Taomlar summasi
           serviceFee: paymentData.serviceFee,     // Xizmat haqi (10%)
-          totalPrice: paymentData.total,          // Jami (taomlar + xizmat haqi)
+          hourlyCharge: paymentData.hourlyCharge, // Soatlik to'lov (bandlik)
+          hourlyHours: paymentData.hourlyHours,   // Necha soat
+          totalPrice: paymentData.total,          // Jami (taomlar + xizmat haqi + bandlik)
           discount: 0,
           // paymentType o'chirildi - checkda ko'rsatilmaydi
         })

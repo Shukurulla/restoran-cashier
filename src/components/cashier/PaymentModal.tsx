@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Order, PaymentType, PaymentSplit, PartialPaymentResult } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { BiMoney, BiCreditCard, BiCheck, BiX, BiMessageDetail, BiCheckCircle } from 'react-icons/bi';
+import { BiMoney, BiCreditCard, BiCheck, BiX, BiMessageDetail, BiCheckCircle, BiTime } from 'react-icons/bi';
 import { SiKlarna } from 'react-icons/si';
 
 interface PaymentModalProps {
@@ -17,6 +17,24 @@ interface PaymentModalProps {
 
 const formatMoney = (amount: number) => {
   return amount.toLocaleString('uz-UZ') + ' so\'m';
+};
+
+// Soatlik to'lovni hisoblash funksiyasi
+const calculateHourlyCharge = (order: Order | null): { hours: number; charge: number } => {
+  if (!order || !order.hasHourlyCharge || !order.hourlyChargeAmount || order.hourlyChargeAmount <= 0) {
+    return { hours: 0, charge: 0 };
+  }
+
+  const createdAt = new Date(order.createdAt);
+  const now = new Date();
+  const diffMs = now.getTime() - createdAt.getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+
+  // Agar hech qanday vaqt o'tmagan bo'lsa ham, 1 soat hisoblanadi
+  const hours = Math.max(1, Math.ceil(diffHours));
+  const charge = hours * order.hourlyChargeAmount;
+
+  return { hours, charge };
 };
 
 export function PaymentModal({ order, isOpen, onClose, onConfirm, onPartialConfirm }: PaymentModalProps) {
@@ -68,12 +86,16 @@ export function PaymentModal({ order, isOpen, onClose, onConfirm, onPartialConfi
   const isSaboy = order.orderType === 'saboy';
   const serviceChargePercent = isSaboy ? 0 : 10;
 
+  // Soatlik to'lov hisoblash
+  const hourlyChargeData = calculateHourlyCharge(order);
+  const hourlyCharge = hourlyChargeData.charge;
+
   // Full mode uchun
   const fullSubtotal = unpaidItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const fullServiceCharge = isSaboy ? 0 : Math.round(fullSubtotal * (serviceChargePercent / 100));
-  const fullTotal = fullSubtotal + fullServiceCharge;
+  const fullTotal = fullSubtotal + fullServiceCharge + hourlyCharge;
 
-  // Partial mode uchun
+  // Partial mode uchun (soatlik to'lov faqat full mode da)
   const selectedSubtotal = selectedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const selectedServiceCharge = isSaboy ? 0 : Math.round(selectedSubtotal * (serviceChargePercent / 100));
   const selectedTotal = selectedSubtotal + selectedServiceCharge;
@@ -314,20 +336,30 @@ export function PaymentModal({ order, isOpen, onClose, onConfirm, onPartialConfi
                 <span className="tabular-nums">{formatMoney(selectedSubtotal)}</span>
               </div>
             )}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>Taomlar:</span>
-                  <span className="tabular-nums">{formatMoney(selectionMode === 'full' ? fullSubtotal : selectedSubtotal)}</span>
-                </div>
-                {!isSaboy && (selectionMode === 'full' ? fullServiceCharge : selectedServiceCharge) > 0 && (
-                  <div className="flex items-center gap-2 text-sm text-[#3b82f6] border-l border-border pl-4">
-                    <span>Xizmat (10%):</span>
-                    <span className="tabular-nums">{formatMoney(selectionMode === 'full' ? fullServiceCharge : selectedServiceCharge)}</span>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4 flex-wrap">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>Taomlar:</span>
+                    <span className="tabular-nums">{formatMoney(selectionMode === 'full' ? fullSubtotal : selectedSubtotal)}</span>
                   </div>
-                )}
+                  {!isSaboy && (selectionMode === 'full' ? fullServiceCharge : selectedServiceCharge) > 0 && (
+                    <div className="flex items-center gap-2 text-sm text-[#3b82f6] border-l border-border pl-4">
+                      <span>Xizmat (10%):</span>
+                      <span className="tabular-nums">{formatMoney(selectionMode === 'full' ? fullServiceCharge : selectedServiceCharge)}</span>
+                    </div>
+                  )}
+                  {/* Soatlik to'lov - faqat full mode da */}
+                  {selectionMode === 'full' && hourlyCharge > 0 && (
+                    <div className="flex items-center gap-2 text-sm text-[#a855f7] border-l border-border pl-4">
+                      <BiTime className="text-base" />
+                      <span>Bandlik ({hourlyChargeData.hours} soat):</span>
+                      <span className="tabular-nums">{formatMoney(hourlyCharge)}</span>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center justify-end gap-3 pt-2 border-t border-border">
                 <span className="font-medium text-sm">Jami:</span>
                 <span className="text-xl font-bold text-[#22c55e] tabular-nums">
                   {formatMoney(currentTotal)}

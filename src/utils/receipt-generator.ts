@@ -23,6 +23,9 @@ interface PaymentData {
   itemsTotal: number;
   serviceFee?: number;
   discount?: number;
+  // Soatlik to'lov (hourly charge)
+  hourlyCharge?: number;
+  hourlyHours?: number;
   totalPrice: number;
   paymentType: 'cash' | 'card' | string;
   isPaid?: boolean;
@@ -200,6 +203,7 @@ ${itemsHtml}
 <div class="row bold"><span class="left">Jami:</span><span class="right">${items.length} ta</span></div>
 <div class="row"><span class="left">Taomlar:</span><span class="right">${formatPrice(data.itemsTotal)} so'm</span></div>
 ${data.serviceFee && data.serviceFee > 0 ? `<div class="row"><span class="left">Xizmat haqi:</span><span class="right">${formatPrice(data.serviceFee)} so'm</span></div>` : ''}
+${data.hourlyCharge && data.hourlyCharge > 0 ? `<div class="row"><span class="left">Bandlik (${data.hourlyHours || 1} soat):</span><span class="right">${formatPrice(data.hourlyCharge)} so'm</span></div>` : ''}
 ${data.discount && data.discount > 0 ? `<div class="row"><span class="left">Chegirma:</span><span class="right">-${formatPrice(data.discount)} so'm</span></div>` : ''}
 <div class="row large"><span class="left">ITOGO:</span><span class="right">${formatPrice(data.totalPrice)} so'm</span></div>
 <div class="sep">${SEP}</div>

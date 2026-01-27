@@ -177,6 +177,44 @@ export function Dashboard() {
       }
     });
 
+    // Waiter dan chek chiqarish so'rovi kelganda
+    newSocket.on("print_check_requested", async (data) => {
+      console.log("Chek chiqarish so'rovi keldi:", data);
+
+      const selectedPrinter = localStorage.getItem("selectedPrinter") || undefined;
+      if (!selectedPrinter) {
+        console.error("Printer tanlanmagan");
+        return;
+      }
+
+      try {
+        const result = await PrinterAPI.printPayment(
+          {
+            orderId: data.orderId,
+            orderNumber: data.orderNumber,
+            tableName: data.tableName,
+            waiterName: data.waiterName || "",
+            items: data.items || [],
+            subtotal: data.subtotal || 0,
+            serviceFee: data.serviceFee || 0,
+            total: data.total || 0,
+            paymentType: "cash",
+            restaurantName: restaurant?.name || "Restoran",
+            date: new Date().toLocaleString("uz-UZ"),
+          },
+          selectedPrinter,
+        );
+
+        console.log("Waiter so'rovi bo'yicha chek chiqarildi:", result);
+
+        if (!result.success) {
+          console.error("Chek chiqarishda xatolik:", result.error);
+        }
+      } catch (error) {
+        console.error("Chek chiqarishda xatolik:", error);
+      }
+    });
+
     setSocket(newSocket);
 
     return () => {

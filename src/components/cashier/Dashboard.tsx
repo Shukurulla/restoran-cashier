@@ -208,16 +208,20 @@ export function Dashboard() {
       }
 
       try {
+        // Bekor qilingan itemlarni chiqarib tashlash
+        const activeCheckItems = (data.items || []).filter((item: Record<string, unknown>) => item.status !== 'cancelled' && !item.isCancelled);
+        const activeCheckSubtotal = activeCheckItems.reduce((sum: number, item: Record<string, unknown>) => sum + ((item.price as number) || 0) * ((item.quantity as number) || 1), 0);
+
         const result = await PrinterAPI.printPayment(
           {
             orderId: data.orderId,
             orderNumber: data.orderNumber,
             tableName: data.tableName,
             waiterName: data.waiterName || "",
-            items: (data.items || []).filter((item: Record<string, unknown>) => item.status !== 'cancelled' && !item.isCancelled),
-            subtotal: data.subtotal || 0,
+            items: activeCheckItems,
+            subtotal: activeCheckSubtotal,
             serviceFee: data.serviceFee || 0,
-            total: data.total || 0,
+            total: activeCheckSubtotal + (data.serviceFee || 0),
             paymentType: "cash",
             restaurantName: restaurant?.name || "Restoran",
             date: new Date().toLocaleString("uz-UZ"),

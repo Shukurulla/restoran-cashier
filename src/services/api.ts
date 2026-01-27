@@ -144,11 +144,12 @@ class ApiService {
       // Agar backend summalarni qaytarmasa, frontendda hisoblaymiz
       // Bekor qilingan itemlarni hisobga olmaymiz
       const activeItems = items.filter((item: { status: string; isCancelled?: boolean }) => item.status !== 'cancelled' && !item.isCancelled);
-      const subtotal = order.subtotal || activeItems.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0);
+      // Har doim active itemlardan hisoblaymiz (bekor qilinganlar hisobga olinmasin)
+      const subtotal = activeItems.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0);
       // Saboy uchun xizmat haqqi yo'q
       const serviceChargePercent = isSaboy ? 0 : (order.serviceChargePercent || 10);
-      const serviceCharge = isSaboy ? 0 : (order.serviceCharge || Math.round(subtotal * (serviceChargePercent / 100)));
-      const grandTotal = order.grandTotal || (subtotal + serviceCharge);
+      const serviceCharge = isSaboy ? 0 : Math.round(subtotal * (serviceChargePercent / 100));
+      const grandTotal = subtotal + serviceCharge;
 
       // To'lov statusi: isPaid yoki status === 'paid'
       const isPaid = order.isPaid === true || order.status === 'paid';
@@ -266,12 +267,12 @@ class ApiService {
     const orderType = order.orderType || (order.isSaboy ? 'saboy' : undefined);
     const isSaboy = orderType === 'saboy';
 
-    // Agar backend summalarni qaytarmasa, frontendda hisoblaymiz
-    const subtotal = order.subtotal || items.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0);
-    // Saboy uchun xizmat haqqi yo'q
+    // Bekor qilingan itemlarni hisobga olmaymiz
+    const activeItems = items.filter((item: { status: string }) => item.status !== 'cancelled');
+    const subtotal = activeItems.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0);
     const serviceChargePercent = isSaboy ? 0 : (order.serviceChargePercent || 10);
-    const serviceCharge = isSaboy ? 0 : (order.serviceCharge || Math.round(subtotal * (serviceChargePercent / 100)));
-    const grandTotal = order.grandTotal || (subtotal + serviceCharge);
+    const serviceCharge = isSaboy ? 0 : Math.round(subtotal * (serviceChargePercent / 100));
+    const grandTotal = subtotal + serviceCharge;
 
     const tableNumber = order.tableId?.number || 0;
     const tableName = isSaboy ? 'Soboy' : `Stol ${tableNumber}`;
@@ -345,10 +346,12 @@ class ApiService {
 
     const orderType = order.orderType || 'dine-in';
     const isSaboy = orderType === 'saboy';
-    const subtotal = order.subtotal || items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    // Bekor qilingan itemlarni hisobga olmaymiz
+    const activeItemsForCalc = items.filter(item => item.status !== 'cancelled');
+    const subtotal = activeItemsForCalc.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const serviceChargePercent = isSaboy ? 0 : (order.serviceChargePercent || 10);
-    const serviceCharge = isSaboy ? 0 : (order.serviceCharge || Math.round(subtotal * (serviceChargePercent / 100)));
-    const grandTotal = order.grandTotal || (subtotal + serviceCharge);
+    const serviceCharge = isSaboy ? 0 : Math.round(subtotal * (serviceChargePercent / 100));
+    const grandTotal = subtotal + serviceCharge;
     const tableNumber = order.tableId?.number || 0;
 
     const transformedOrder: Order = {
@@ -532,7 +535,8 @@ class ApiService {
 
     const orderType = order.orderType || 'dine-in';
     const isSaboy = orderType === 'saboy';
-    const subtotal = orderItems.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0);
+    const activeOrderItems = orderItems.filter((item: { status: string }) => item.status !== 'cancelled');
+    const subtotal = activeOrderItems.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0);
     const serviceChargePercent = isSaboy ? 0 : 10;
     const serviceCharge = isSaboy ? 0 : Math.round(subtotal * (serviceChargePercent / 100));
     const grandTotal = subtotal + serviceCharge;

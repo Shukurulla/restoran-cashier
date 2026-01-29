@@ -212,6 +212,21 @@ export function Dashboard() {
         const activeCheckItems = (data.items || []).filter((item: Record<string, unknown>) => item.status !== 'cancelled' && !item.isCancelled);
         const activeCheckSubtotal = activeCheckItems.reduce((sum: number, item: Record<string, unknown>) => sum + ((item.price as number) || 0) * ((item.quantity as number) || 1), 0);
 
+        // Soatlik to'lovni hisoblash (kabinalar uchun)
+        let hourlyCharge = 0;
+        let hourlyHours = 0;
+        if (data.hasHourlyCharge && data.hourlyChargeAmount && data.hourlyChargeAmount > 0) {
+          const createdAt = new Date(data.createdAt);
+          const now = new Date();
+          const diffMs = now.getTime() - createdAt.getTime();
+          const diffHours = diffMs / (1000 * 60 * 60);
+          hourlyHours = Math.max(1, Math.ceil(diffHours));
+          hourlyCharge = hourlyHours * data.hourlyChargeAmount;
+        }
+
+        // Jami summa (bandlik bilan)
+        const totalWithHourly = activeCheckSubtotal + (data.serviceFee || 0) + hourlyCharge;
+
         const result = await PrinterAPI.printPayment(
           {
             orderId: data.orderId,
@@ -221,7 +236,9 @@ export function Dashboard() {
             items: activeCheckItems,
             subtotal: activeCheckSubtotal,
             serviceFee: data.serviceFee || 0,
-            total: activeCheckSubtotal + (data.serviceFee || 0),
+            hourlyCharge: hourlyCharge > 0 ? hourlyCharge : undefined,
+            hourlyHours: hourlyHours > 0 ? hourlyHours : undefined,
+            total: totalWithHourly,
             paymentType: "cash",
             restaurantName: restaurant?.name || "Restoran",
             date: new Date().toLocaleString("uz-UZ"),

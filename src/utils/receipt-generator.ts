@@ -78,10 +78,9 @@ function formatDateTime(date: Date | string = new Date()): string {
   return `${day}.${month}.${year} ${hours}:${minutes}`;
 }
 
-// Narxni formatlash - oddiy probel bilan (printer uchun optimallashtirilgan)
+// Narxni formatlash
 function formatPrice(price: number): string {
-  const num = Math.round(price || 0);
-  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return new Intl.NumberFormat('uz-UZ').format(price || 0);
 }
 
 // Professional HTML generatsiya

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Order, PaymentType, PaymentSplit, PartialPaymentResult } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { BiMoney, BiCreditCard, BiCheck, BiX, BiMessageDetail, BiCheckCircle, BiTime } from 'react-icons/bi';
+import { BiMoney, BiCreditCard, BiCheck, BiX, BiCheckCircle, BiTime } from 'react-icons/bi';
 import { SiKlarna } from 'react-icons/si';
 
 interface PaymentModalProps {
@@ -45,14 +45,12 @@ export function PaymentModal({ order, isOpen, onClose, onConfirm, onPartialConfi
   const [paymentMode, setPaymentMode] = useState<'single' | 'split'>('single');
   const [singlePaymentType, setSinglePaymentType] = useState<PaymentType>('cash');
   const [splitPayment, setSplitPayment] = useState<PaymentSplit>({ cash: 0, card: 0, click: 0 });
-  const [comment, setComment] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   // Order o'zgarganda state ni reset qilish
   useEffect(() => {
     if (order) {
       setSplitPayment({ cash: 0, card: 0, click: 0 });
-      setComment('');
       setPaymentMode('single');
       setSinglePaymentType('cash');
       setSelectionMode('full');
@@ -145,10 +143,10 @@ export function PaymentModal({ order, isOpen, onClose, onConfirm, onPartialConfi
       if (selectionMode === 'partial' && onPartialConfirm) {
         // Partial payment
         const itemIds = Array.from(selectedItemIds);
-        await onPartialConfirm(order._id, itemIds, paymentType, split, comment || undefined);
+        await onPartialConfirm(order._id, itemIds, paymentType, split, undefined);
       } else {
         // Full payment
-        await onConfirm(order._id, paymentType, split, comment || undefined);
+        await onConfirm(order._id, paymentType, split, undefined);
       }
       onClose();
     } catch (error) {
@@ -499,20 +497,6 @@ export function PaymentModal({ order, isOpen, onClose, onConfirm, onPartialConfi
             </div>
           )}
 
-          {/* Comment */}
-          <div>
-            <h4 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-              <BiMessageDetail />
-              Izoh (ixtiyoriy):
-            </h4>
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="To'lov haqida izoh..."
-              rows={2}
-              className="w-full bg-secondary border border-border rounded-xl p-3 text-sm focus:outline-none focus:border-[#3b82f6] resize-none"
-            />
-          </div>
         </div>
 
         <DialogFooter className="gap-3">

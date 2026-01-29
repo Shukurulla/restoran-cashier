@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/services/api";
@@ -54,6 +54,9 @@ export function Dashboard() {
     }
     return null;
   });
+
+  // Waiter dan kelgan check so'rovlarini kuzatish (duplikatlarni oldini olish)
+  const printedCheckRequestsRef = useRef<Set<string>>(new Set());
 
   const loadData = useCallback(async (shiftId?: string) => {
     try {
@@ -201,6 +204,19 @@ export function Dashboard() {
     newSocket.on("print_check_requested", async (data) => {
       console.log("Chek chiqarish so'rovi keldi:", data);
 
+      // Duplikat so'rovlarni oldini olish (orderId + timestamp)
+      const requestKey = `${data.orderId}-${data.requestId || Date.now()}`;
+      if (printedCheckRequestsRef.current.has(requestKey)) {
+        console.log("Duplikat check so'rovi, o'tkazib yuborildi:", requestKey);
+        return;
+      }
+      printedCheckRequestsRef.current.add(requestKey);
+
+      // 30 sekunddan keyin tozalash (xotira uchun)
+      setTimeout(() => {
+        printedCheckRequestsRef.current.delete(requestKey);
+      }, 30000);
+
       const selectedPrinter = localStorage.getItem("selectedPrinter") || undefined;
       if (!selectedPrinter) {
         console.error("Printer tanlanmagan");
@@ -283,6 +299,54 @@ export function Dashboard() {
       // Update local state
       setOrders((prev) => prev.map((o) => (o._id === orderId ? paidOrder : o)));
       await loadData();
+
+      // To'lovdan keyin avtomatik check chiqarish
+      const selectedPrinter = localStorage.getItem("selectedPrinter") || undefined;
+      if (selectedPrinter) {
+        // Soatlik to'lovni hisoblash
+        let hourlyCharge = 0;
+        let hourlyHours = 0;
+        if (order.hasHourlyCharge && order.hourlyChargeAmount && order.hourlyChargeAmount > 0) {
+          const createdAt = new Date(order.createdAt);
+          const now = new Date();
+          const diffMs = now.getTime() - createdAt.getTime();
+          const diffHours = diffMs / (1000 * 60 * 60);
+          hourlyHours = Math.max(1, Math.ceil(diffHours));
+          hourlyCharge = hourlyHours * order.hourlyChargeAmount;
+        }
+
+        // Total ni qayta hisoblash (bandlik bilan)
+        const totalWithHourly = (paidOrder.grandTotal || order.grandTotal) + hourlyCharge;
+
+        PrinterAPI.printPayment(
+          {
+            orderId: paidOrder._id,
+            orderNumber: paidOrder.orderNumber,
+            tableName: paidOrder.tableName,
+            waiterName: paidOrder.waiter?.name || order.waiter?.name || "",
+            items: (paidOrder.items || order.items)
+              .filter((item) => item.status !== "cancelled" && !item.isCancelled)
+              .map((item) => ({
+                name: item.name,
+                quantity: item.quantity,
+                price: item.price,
+              })),
+            subtotal: paidOrder.total || order.total,
+            serviceFee: paidOrder.serviceFee || order.serviceFee,
+            hourlyCharge: hourlyCharge > 0 ? hourlyCharge : undefined,
+            hourlyHours: hourlyHours > 0 ? hourlyHours : undefined,
+            total: totalWithHourly,
+            paymentType,
+            restaurantName: restaurant?.name || "Restoran",
+            date: new Date().toLocaleString("uz-UZ"),
+          },
+          selectedPrinter,
+        ).then((result) => {
+          console.log("To'lovdan keyin check chiqarildi:", result);
+        }).catch((err) => {
+          console.error("To'lovdan keyin check chiqarishda xatolik:", err);
+        });
+      }
     } catch (error) {
       console.error("To'lov xatosi:", error);
       const errorMessage = error instanceof Error ? error.message : "To'lov amalga oshirilmadi";

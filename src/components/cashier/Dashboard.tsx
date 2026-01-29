@@ -337,6 +337,8 @@ export function Dashboard() {
 
   const handlePrintClick = async (order: Order) => {
     console.log("Chek chiqarish boshlandi:", order._id);
+    console.log("🔍 DEBUG - order.hasHourlyCharge:", order.hasHourlyCharge);
+    console.log("🔍 DEBUG - order.hourlyChargeAmount:", order.hourlyChargeAmount);
 
     const selectedPrinter = localStorage.getItem("selectedPrinter") || undefined;
     console.log("Tanlangan printer:", selectedPrinter);
@@ -359,6 +361,9 @@ export function Dashboard() {
       hourlyHours = Math.max(1, Math.ceil(diffHours));
       hourlyCharge = hourlyHours * order.hourlyChargeAmount;
     }
+
+    console.log("🔍 DEBUG - hourlyCharge calculated:", hourlyCharge);
+    console.log("🔍 DEBUG - hourlyHours calculated:", hourlyHours);
 
     // Total ni qayta hisoblash (bandlik bilan)
     const totalWithHourly = order.grandTotal + hourlyCharge;

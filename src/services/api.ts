@@ -178,9 +178,9 @@ class ApiService {
         },
         createdAt: order.createdAt,
         paidAt: order.paidAt,
-        // Soatlik to'lov (hourly charge) ma'lumotlari
-        hasHourlyCharge: order.tableId?.hasHourlyCharge || false,
-        hourlyChargeAmount: order.tableId?.hourlyChargeAmount || 0,
+        // Soatlik to'lov (hourly charge) ma'lumotlari - backend to'g'ridan-to'g'ri yoki tableId ichida qaytarishi mumkin
+        hasHourlyCharge: order.hasHourlyCharge || order.tableId?.hasHourlyCharge || false,
+        hourlyChargeAmount: order.hourlyChargeAmount || order.tableId?.hourlyChargeAmount || 0,
       } as Order;
     });
   }
@@ -299,6 +299,9 @@ class ApiService {
       },
       createdAt: order.createdAt,
       paidAt: order.paidAt,
+      // Soatlik to'lov (hourly charge) ma'lumotlari - backend to'g'ridan-to'g'ri yoki tableId ichida qaytarishi mumkin
+      hasHourlyCharge: order.hasHourlyCharge || order.tableId?.hasHourlyCharge || false,
+      hourlyChargeAmount: order.hourlyChargeAmount || order.tableId?.hourlyChargeAmount || 0,
     } as Order;
   }
 
@@ -376,6 +379,9 @@ class ApiService {
       },
       createdAt: order.createdAt,
       paidAt: order.paidAt,
+      // Soatlik to'lov (hourly charge) ma'lumotlari - backend to'g'ridan-to'g'ri yoki tableId ichida qaytarishi mumkin
+      hasHourlyCharge: order.hasHourlyCharge || order.tableId?.hasHourlyCharge || false,
+      hourlyChargeAmount: order.hourlyChargeAmount || order.tableId?.hourlyChargeAmount || 0,
     };
 
     return {
@@ -564,6 +570,9 @@ class ApiService {
       },
       createdAt: order.createdAt,
       paidAt: order.paidAt,
+      // Soatlik to'lov (hourly charge) ma'lumotlari - backend to'g'ridan-to'g'ri yoki tableId ichida qaytarishi mumkin
+      hasHourlyCharge: order.hasHourlyCharge || order.tableId?.hasHourlyCharge || false,
+      hourlyChargeAmount: order.hourlyChargeAmount || order.tableId?.hourlyChargeAmount || 0,
     } as Order;
   }
 

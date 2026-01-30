@@ -58,6 +58,9 @@ export function Dashboard() {
   // Waiter dan kelgan check so'rovlarini kuzatish (duplikatlarni oldini olish)
   const printedCheckRequestsRef = useRef<Set<string>>(new Set());
 
+  // Orders ref - socket handler ichida eng yangi ordersga murojaat qilish uchun
+  const ordersRef = useRef<Order[]>([]);
+
   const loadData = useCallback(async (shiftId?: string) => {
     try {
       // Agar shiftId berilmagan bo'lsa, avval aktiv smenani olamiz
@@ -81,6 +84,11 @@ export function Dashboard() {
       console.error("Failed to load data:", error);
     }
   }, []);
+
+  // ordersRef ni orders bilan sinxronlash (socket handler uchun)
+  useEffect(() => {
+    ordersRef.current = orders;
+  }, [orders]);
 
   // Socket connection
   useEffect(() => {
@@ -224,38 +232,51 @@ export function Dashboard() {
       }
 
       try {
+        // Orderni local state dan topish (to'liq ma'lumotlar uchun)
+        const localOrder = ordersRef.current.find((o) => o._id === data.orderId);
+
         // Bekor qilingan itemlarni chiqarib tashlash
-        const activeCheckItems = (data.items || []).filter((item: Record<string, unknown>) => item.status !== 'cancelled' && !item.isCancelled);
+        // Agar local order topilsa - undan olish, aks holda socket data dan
+        const itemsSource = localOrder?.items || data.items || [];
+        const activeCheckItems = itemsSource.filter((item: Record<string, unknown>) => item.status !== 'cancelled' && !item.isCancelled);
         const activeCheckSubtotal = activeCheckItems.reduce((sum: number, item: Record<string, unknown>) => sum + ((item.price as number) || 0) * ((item.quantity as number) || 1), 0);
 
         // Soatlik to'lovni hisoblash (kabinalar uchun)
+        // Local order dan yoki socket data dan olish
         let hourlyCharge = 0;
         let hourlyHours = 0;
-        if (data.hasHourlyCharge && data.hourlyChargeAmount && data.hourlyChargeAmount > 0) {
-          const createdAt = new Date(data.createdAt);
+        const hasHourlyCharge = localOrder?.hasHourlyCharge || data.hasHourlyCharge;
+        const hourlyChargeAmount = localOrder?.hourlyChargeAmount || data.hourlyChargeAmount;
+        const createdAtStr = localOrder?.createdAt || data.createdAt;
+
+        if (hasHourlyCharge && hourlyChargeAmount && hourlyChargeAmount > 0 && createdAtStr) {
+          const createdAt = new Date(createdAtStr);
           const now = new Date();
           const diffMs = now.getTime() - createdAt.getTime();
           const diffHours = diffMs / (1000 * 60 * 60);
           hourlyHours = Math.floor(diffHours) + 1;
-          hourlyCharge = hourlyHours * data.hourlyChargeAmount;
+          hourlyCharge = hourlyHours * hourlyChargeAmount;
         }
 
+        // Service fee - local order dan yoki socket data dan
+        const serviceFee = localOrder?.serviceFee ?? data.serviceFee ?? 0;
+
         // Jami summa (bandlik bilan)
-        const totalWithHourly = activeCheckSubtotal + (data.serviceFee || 0) + hourlyCharge;
+        const totalWithHourly = activeCheckSubtotal + serviceFee + hourlyCharge;
 
         const result = await PrinterAPI.printPayment(
           {
             orderId: data.orderId,
-            orderNumber: data.orderNumber,
-            tableName: data.tableName,
-            waiterName: data.waiterName || "",
+            orderNumber: localOrder?.orderNumber || data.orderNumber,
+            tableName: localOrder?.tableName || data.tableName,
+            waiterName: localOrder?.waiter?.name || data.waiterName || "",
             items: activeCheckItems,
             subtotal: activeCheckSubtotal,
-            serviceFee: data.serviceFee || 0,
+            serviceFee: serviceFee,
             hourlyCharge: hourlyCharge > 0 ? hourlyCharge : undefined,
             hourlyHours: hourlyHours > 0 ? hourlyHours : undefined,
             total: totalWithHourly,
-            paymentType: "cash",
+            paymentType: localOrder?.paymentType || "cash",
             restaurantName: restaurant?.name || "Restoran",
             date: new Date().toLocaleString("uz-UZ"),
           },

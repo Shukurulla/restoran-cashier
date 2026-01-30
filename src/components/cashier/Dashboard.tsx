@@ -236,7 +236,7 @@ export function Dashboard() {
           const now = new Date();
           const diffMs = now.getTime() - createdAt.getTime();
           const diffHours = diffMs / (1000 * 60 * 60);
-          hourlyHours = Math.max(1, Math.ceil(diffHours));
+          hourlyHours = Math.floor(diffHours) + 1;
           hourlyCharge = hourlyHours * data.hourlyChargeAmount;
         }
 
@@ -311,7 +311,7 @@ export function Dashboard() {
           const now = new Date();
           const diffMs = now.getTime() - createdAt.getTime();
           const diffHours = diffMs / (1000 * 60 * 60);
-          hourlyHours = Math.max(1, Math.ceil(diffHours));
+          hourlyHours = Math.floor(diffHours) + 1;
           hourlyCharge = hourlyHours * order.hourlyChargeAmount;
         }
 
@@ -422,7 +422,7 @@ export function Dashboard() {
       const now = new Date();
       const diffMs = now.getTime() - createdAt.getTime();
       const diffHours = diffMs / (1000 * 60 * 60);
-      hourlyHours = Math.max(1, Math.ceil(diffHours));
+      hourlyHours = Math.floor(diffHours) + 1;
       hourlyCharge = hourlyHours * order.hourlyChargeAmount;
     }
 

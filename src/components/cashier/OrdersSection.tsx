@@ -35,7 +35,16 @@ export function OrdersSection({ orders, onPayClick, onDetailsClick, onPrintClick
     o.status !== 'cancelled' &&
     hasActiveItems(o) // Barcha itemlari cancelled bo'lsa, active emas
   );
-  const paidOrders = orders.filter(o => o.paymentStatus === 'paid');
+
+  // To'langan buyurtmalar - paidAt bo'yicha saralash (eng so'nggi pastda)
+  const paidOrders = orders
+    .filter(o => o.paymentStatus === 'paid')
+    .sort((a, b) => {
+      const dateA = a.paidAt ? new Date(a.paidAt).getTime() : 0;
+      const dateB = b.paidAt ? new Date(b.paidAt).getTime() : 0;
+      return dateA - dateB; // Ascending - eng yangi pastda
+    });
+
   // Cancelled orders: status cancelled YOKI barcha itemlar cancelled
   const cancelledOrders = orders.filter(o =>
     o.status === 'cancelled' ||

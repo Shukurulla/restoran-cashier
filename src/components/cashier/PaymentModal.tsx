@@ -134,10 +134,8 @@ export function PaymentModal({ order, isOpen, onClose, onConfirm, onPartialConfi
   const handleConfirm = async () => {
     setIsLoading(true);
     try {
-      const paymentType = paymentMode === 'split'
-        ? (splitPayment.cash >= splitPayment.card && splitPayment.cash >= splitPayment.click ? 'cash' :
-           splitPayment.card >= splitPayment.click ? 'card' : 'click')
-        : singlePaymentType;
+      // Gibrid to'lovda paymentType = 'mixed', oddiy to'lovda tanlangan tur
+      const paymentType = paymentMode === 'split' ? 'mixed' : singlePaymentType;
 
       const split = paymentMode === 'split' ? splitPayment : undefined;
 

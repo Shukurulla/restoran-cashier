@@ -57,7 +57,7 @@ export interface PartialPaymentResult {
   unpaidTotal: number;
 }
 
-export type PaymentType = 'cash' | 'card' | 'click';
+export type PaymentType = 'cash' | 'card' | 'click' | 'mixed';
 
 export interface PaymentSplit {
   cash: number;

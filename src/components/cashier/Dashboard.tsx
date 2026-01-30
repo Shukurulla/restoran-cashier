@@ -490,8 +490,6 @@ export function Dashboard() {
         onAddItemsClick={handleAddItemsClick}
         onMergeSuccess={loadData}
       />
-
-      {/* Modals */}
       <PaymentModal
         order={selectedOrder}
         isOpen={isPaymentOpen}

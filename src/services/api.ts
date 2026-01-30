@@ -156,6 +156,12 @@ class ApiService {
       // Bekor qilingan statusni saqlash
       const isCancelled = order.status === 'cancelled';
 
+      // To'langan orderlar uchun backend grandTotal ni ishlatish (hourlyCharge bilan)
+      // To'lanmagan orderlar uchun frontend hisoblash
+      const finalGrandTotal = isPaid
+        ? (order.grandTotal || grandTotal)  // Backend dan kelgan summa (hourlyCharge bilan)
+        : grandTotal;
+
       return {
         _id: order._id,
         orderNumber: order.orderNumber || index + 1,
@@ -169,7 +175,7 @@ class ApiService {
         paymentType: order.paymentType,
         total: subtotal,
         serviceFee: serviceCharge,
-        grandTotal: grandTotal,
+        grandTotal: finalGrandTotal,
         waiter: {
           _id: order.waiterId?._id || order.waiterId || '',
           name: order.waiterId?.firstName
@@ -178,9 +184,12 @@ class ApiService {
         },
         createdAt: order.createdAt,
         paidAt: order.paidAt,
-        // Soatlik to'lov (hourly charge) ma'lumotlari - backend to'g'ridan-to'g'ri yoki tableId ichida qaytarishi mumkin
+        // Soatlik to'lov (hourly charge) ma'lumotlari
         hasHourlyCharge: order.hasHourlyCharge || order.tableId?.hasHourlyCharge || false,
         hourlyChargeAmount: order.hourlyChargeAmount || order.tableId?.hourlyChargeAmount || 0,
+        // Backend dan kelgan hisoblangan qiymatlar (to'langan orderlar uchun)
+        hourlyCharge: order.hourlyCharge || 0,
+        hourlyChargeHours: order.hourlyChargeHours || 0,
       } as Order;
     });
   }

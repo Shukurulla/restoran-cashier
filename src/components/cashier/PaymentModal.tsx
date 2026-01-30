@@ -185,7 +185,7 @@ export function PaymentModal({ order, isOpen, onClose, onConfirm, onPartialConfi
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-card border-border max-w-[900px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-card border-border w-[95vw] max-w-[1100px] max-h-[95vh] overflow-y-auto">
         <DialogHeader className="pb-3">
           <DialogTitle className="flex items-center gap-2.5 text-lg">
             <BiMoney className="text-[#22c55e]" />
@@ -193,9 +193,9 @@ export function PaymentModal({ order, isOpen, onClose, onConfirm, onPartialConfi
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
+        <div className="space-y-5 py-3">
           {/* Order Info */}
-          <div className="bg-secondary rounded-xl p-3 flex gap-6">
+          <div className="bg-secondary rounded-xl p-4 flex gap-8">
             <div className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">{order.orderType === 'saboy' ? 'Turi:' : 'Stol:'}</span>
               <span className="font-semibold">
@@ -239,7 +239,7 @@ export function PaymentModal({ order, isOpen, onClose, onConfirm, onPartialConfi
           </div>
 
           {/* Items List */}
-          <div className="bg-secondary rounded-xl p-3">
+          <div className="bg-secondary rounded-xl p-4">
             {/* Header with select all */}
             {selectionMode === 'partial' && (
               <div className="flex justify-between items-center mb-2 pb-2 border-b border-border">
@@ -263,7 +263,7 @@ export function PaymentModal({ order, isOpen, onClose, onConfirm, onPartialConfi
             )}
 
             {/* Items */}
-            <div className="max-h-[200px] overflow-y-auto space-y-1">
+            <div className="max-h-[350px] overflow-y-auto space-y-1">
               {/* To'lanmagan itemlar */}
               {unpaidItems.map((item) => {
                 const isSelected = selectedItemIds.has(item._id);
@@ -328,7 +328,7 @@ export function PaymentModal({ order, isOpen, onClose, onConfirm, onPartialConfi
           </div>
 
           {/* Summary */}
-          <div className="bg-secondary rounded-xl p-3">
+          <div className="bg-secondary rounded-xl p-4">
             {selectionMode === 'partial' && (
               <div className="flex justify-between text-sm mb-2 pb-2 border-b border-border">
                 <span className="text-muted-foreground">Tanlangan: {selectedItems.length} ta</span>

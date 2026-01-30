@@ -30,8 +30,9 @@ const calculateHourlyCharge = (order: Order | null): { hours: number; charge: nu
   const diffMs = now.getTime() - createdAt.getTime();
   const diffHours = diffMs / (1000 * 60 * 60);
 
-  // Agar hech qanday vaqt o'tmagan bo'lsa ham, 1 soat hisoblanadi
-  const hours = Math.max(1, Math.ceil(diffHours));
+  // Birinchi soat boshidanoq hisoblanadi:
+  // 0-59 daqiqa = 1 soat, 60-119 daqiqa = 2 soat, va hokazo
+  const hours = Math.floor(diffHours) + 1;
   const charge = hours * order.hourlyChargeAmount;
 
   return { hours, charge };

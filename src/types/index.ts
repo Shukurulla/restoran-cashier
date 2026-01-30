@@ -91,7 +91,9 @@ export interface Order {
   paidAt?: string;
   // Soatlik to'lov (hourly charge) uchun
   hasHourlyCharge?: boolean;
-  hourlyChargeAmount?: number;
+  hourlyChargeAmount?: number;  // Soatlik narx
+  hourlyCharge?: number;        // Hisoblangan jami bandlik haqi
+  hourlyChargeHours?: number;   // Necha soat
 }
 
 // Saboy uchun taom ma'lumotlari

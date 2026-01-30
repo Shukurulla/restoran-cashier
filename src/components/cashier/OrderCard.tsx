@@ -170,9 +170,15 @@ export function OrderCard({
   const isSaboy = order.orderType === 'saboy';
   const unpaidServiceFee = isSaboy ? 0 : Math.round(unpaidSubtotal * 0.1);
 
-  // Soatlik to'lov - faqat to'lanmagan order uchun
-  const hourlyCharge = order.paymentStatus !== 'paid' ? hourlyChargeData.charge : 0;
-  const unpaidTotal = unpaidSubtotal + unpaidServiceFee + hourlyCharge;
+  // Soatlik to'lov
+  const hourlyCharge = hourlyChargeData.charge;
+
+  // To'langan order uchun - backend dan kelgan grandTotal ishlatiladi
+  // To'lanmagan order uchun - hisoblash
+  const isFullyPaid = order.paymentStatus === 'paid';
+  const unpaidTotal = isFullyPaid
+    ? order.grandTotal  // Backend dan kelgan to'g'ri summa (hourlyCharge bilan)
+    : unpaidSubtotal + unpaidServiceFee + hourlyCharge;
 
   // Status statistics - faqat to'lanmagan itemlar uchun
   const pendingCount = unpaidItems.filter(i => i.status === 'pending').length;
@@ -325,40 +331,64 @@ export function OrderCard({
 
         {/* Totals */}
         <div className="flex flex-col gap-2 pt-4 border-t border-border">
-          {/* Agar to'langan itemlar bo'lsa */}
-          {paidSubtotal > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-[#22c55e]">To'langan:</span>
-              <span className="text-[#22c55e] tabular-nums line-through">{formatMoney(paidSubtotal + (isSaboy ? 0 : Math.round(paidSubtotal * 0.1)))}</span>
-            </div>
+          {/* To'liq to'langan order uchun sodda ko'rinish */}
+          {isFullyPaid ? (
+            <>
+              {/* Bandlik haqi bo'lsa ko'rsatish */}
+              {order.hourlyCharge && order.hourlyCharge > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#a855f7]">
+                    <BiTime className="inline mr-1" />
+                    Bandlik ({order.hourlyChargeHours || 1} soat):
+                  </span>
+                  <span className="text-[#a855f7] tabular-nums">{formatMoney(order.hourlyCharge)}</span>
+                </div>
+              )}
+              <div className="flex justify-between pt-2 border-t border-border">
+                <span className="text-sm font-semibold text-[#22c55e]">To'langan:</span>
+                <span className="text-lg font-bold tabular-nums text-[#22c55e]">
+                  {formatMoney(order.grandTotal)}
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Agar qisman to'langan itemlar bo'lsa */}
+              {paidSubtotal > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#22c55e]">To'langan:</span>
+                  <span className="text-[#22c55e] tabular-nums line-through">{formatMoney(paidSubtotal + (isSaboy ? 0 : Math.round(paidSubtotal * 0.1)))}</span>
+                </div>
+              )}
+              {/* Qolgan to'lanmagan summa */}
+              <div className="flex justify-between text-sm">
+                <span className="text-[#71717a]">{paidSubtotal > 0 ? 'Qolgan taomlar:' : 'Taomlar:'}</span>
+                <span className="text-muted-foreground tabular-nums">{formatMoney(unpaidSubtotal)}</span>
+              </div>
+              {!isSaboy && unpaidServiceFee > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#3b82f6]">Xizmat haqi (10%):</span>
+                  <span className="text-[#3b82f6] tabular-nums">{formatMoney(unpaidServiceFee)}</span>
+                </div>
+              )}
+              {/* Soatlik to'lov */}
+              {hourlyCharge > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#a855f7]">
+                    <BiTime className="inline mr-1" />
+                    Bandlik ({hourlyChargeData.hours} soat):
+                  </span>
+                  <span className="text-[#a855f7] tabular-nums">{formatMoney(hourlyCharge)}</span>
+                </div>
+              )}
+              <div className="flex justify-between pt-2 border-t border-border">
+                <span className="text-sm font-semibold">{paidSubtotal > 0 ? 'Qolgan summa:' : 'Jami:'}</span>
+                <span className={`text-lg font-bold tabular-nums ${isMergeMode && isSelected ? 'text-[#a855f7]' : 'text-[#22c55e]'}`}>
+                  {formatMoney(unpaidTotal)}
+                </span>
+              </div>
+            </>
           )}
-          {/* Qolgan to'lanmagan summa */}
-          <div className="flex justify-between text-sm">
-            <span className="text-[#71717a]">{paidSubtotal > 0 ? 'Qolgan taomlar:' : 'Taomlar:'}</span>
-            <span className="text-muted-foreground tabular-nums">{formatMoney(unpaidSubtotal)}</span>
-          </div>
-          {!isSaboy && unpaidServiceFee > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-[#3b82f6]">Xizmat haqi (10%):</span>
-              <span className="text-[#3b82f6] tabular-nums">{formatMoney(unpaidServiceFee)}</span>
-            </div>
-          )}
-          {/* Soatlik to'lov */}
-          {hourlyCharge > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-[#a855f7]">
-                <BiTime className="inline mr-1" />
-                Bandlik ({hourlyChargeData.hours} soat):
-              </span>
-              <span className="text-[#a855f7] tabular-nums">{formatMoney(hourlyCharge)}</span>
-            </div>
-          )}
-          <div className="flex justify-between pt-2 border-t border-border">
-            <span className="text-sm font-semibold">{paidSubtotal > 0 ? 'Qolgan summa:' : 'Jami:'}</span>
-            <span className={`text-lg font-bold tabular-nums ${isMergeMode && isSelected ? 'text-[#a855f7]' : 'text-[#22c55e]'}`}>
-              {formatMoney(unpaidTotal)}
-            </span>
-          </div>
         </div>
       </div>
 
